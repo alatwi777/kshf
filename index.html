@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كشف المتابعة اليومي</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .tab {
+            overflow: hidden;
+            background-color: #f1f1f1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 5px;
+            border-radius: 8px;
+        }
+        .tab button {
+            flex: 0 0 auto;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 12px 20px;
+            font-size: 16px;
+            transition: 0.3s;
+            border-radius: 5px;
+            color: white;
+            min-width: 120px;
+            text-align: center;
+        }
+        .tab button:hover {
+            opacity: 0.9;
+        }
+        .tab button.active {
+            opacity: 0.7;
+        }
+        .tablinks.kashf-tab { background-color: #42A5F5; }
+        .tablinks.participation-tab { background-color: #AB47BC; }
+        .tablinks.input-table-tab { background-color: #4DD0E1; }
+        .tablinks.stats-tab { background-color: #FFCA28; }
+        .tablinks.books-tab { background-color: #66BB6A; }
+        .tablinks.send-tab { background-color: #26A69A; }
+        .tablinks.media-tab { background-color: #EF5350; }
+        .tablinks.pdf-tab { background-color: #F06292; }
+        .tabcontent {
+            display: none;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        select, input, textarea {
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .control-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .control-section input[type="text"], .control-section textarea {
+            flex: 1;
+            min-width: 200px;
+        }
+        .control-section textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .control-section select {
+            width: 150px;
+        }
+        button {
+            padding: 6px 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .delete-btn { background-color: #f44336; }
+        .delete-btn:hover { background-color: #da190b; }
+        .delete-all-btn { background-color: #d32f2f; }
+        .delete-all-btn:hover { background-color: #b71c1c; }
+        .filter-btn { background-color: #2196F3; }
+        .filter-btn:hover { background-color: #0b7dda; }
+        .toggle-btn { background-color: #FF9800; }
+        .toggle-btn:hover { background-color: #F57C00; }
+        .save-btn { background-color: #673AB7; }
+        .save-btn:hover { background-color: #5E35B1; }
+        .export-btn { background-color: #28a745; }
+        .export-btn:hover { background-color: #218838; }
+        .whatsapp-btn { background-color: #25D366; }
+        .whatsapp-btn:hover { background-color: #20BD57; }
+        .upload-btn { background-color: #FF5722; }
+        .upload-btn:hover { background-color: #E64A19; }
+        .add-link-btn { background-color: #9C27B0; }
+        .add-link-btn:hover { background-color: #7B1FA2; }
+        .open-btn { background-color: #0288D1; }
+        .open-btn:hover { background-color: #0277BD; }
+        .checkbox-group {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+        }
+        .filter-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .drag-handle {
+            cursor: move;
+            font-size: 20px;
+            text-align: center;
+            color: #666;
+        }
+        tr.dragging, .media-item.dragging, .pdf-item.dragging {
+            opacity: 0.5;
+            background-color: #f0f0f0;
+        }
+        #booksIframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+        .checkbox-container {
+            display: flex;
+            flex-direction: row;
+            gap: 5px;
+            align-items: center;
+        }
+        .checkbox-label {
+            position: relative;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ccc;
+            display: inline-block;
+            text-align: center;
+            line-height: 20px;
+            cursor: pointer;
+        }
+        .checkbox-label input {
+            display: none;
+        }
+        .checkbox-label.checked::before {
+            content: 'X';
+            color: red;
+            font-weight: bold;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .media-item, .pdf-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .media-item img, .media-item video, .media-item iframe {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .media-item textarea, .pdf-item textarea {
+            flex: 1;
+            height: 60px;
+            resize: vertical;
+        }
+        .pdf-item a {
+            color: #2196F3;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .pdf-item a:hover {
+            text-decoration: underline;
+        }
+        .pdf-item embed {
+            width: 200px;
+            height: 200px;
+            border-radius: 4px;
+        }
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .fullscreen-overlay img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+        .fullscreen-overlay .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .fullscreen-overlay .close-btn:hover {
+            background: #da190b;
+        }
+        #statsChart {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>كشف المتابعة اليومي</h2>
+
+        <!-- تبويبات -->
+        <div class="tab">
+            <button class="tablinks kashf-tab active" onclick="openTab(event, 'kashf')">الكشف</button>
+            <button class="tablinks participation-tab" onclick="openTab(event, 'participation')">المشاركة والواجبات</button>
+            <button class="tablinks input-table-tab" onclick="openTab(event, 'inputTable')">جدول الإدخال</button>
+            <button class="tablinks stats-tab" onclick="openTab(event, 'stats')">إحصائيات</button>
+            <button class="tablinks books-tab" onclick="openTab(event, 'books')">الكتب الدراسية</button>
+            <button class="tablinks send-tab" onclick="openTab(event, 'send')">إرسال</button>
+            <button class="tablinks media-tab" onclick="openTab(event, 'media')">الفيديو والصور</button>
+            <button class="tablinks pdf-tab" onclick="openTab(event, 'pdf')">ملفات PDF</button>
+        </div>
+
+        <!-- تبويب الكشف -->
+        <div id="kashf" class="tabcontent" style="display: block;">
+            <div class="control-section">
+                <input type="text" id="studentName" placeholder="اسم الطالب" onkeypress="if(event.key === 'Enter') addStudent()">
+                <button onclick="addStudent()">إضافة طالب</button>
+                <button class="delete-all-btn" onclick="deleteAllKashfRows()">حذف الكل</button>
+            </div>
+            <div class="control-section">
+                <div id="multipleStudentsContainer" style="display: block;">
+                    <textarea id="multipleStudents" placeholder="أدخل أسماء الطلاب (كل اسم في سطر)" onkeypress="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); addMultipleStudents(); }"></textarea>
+                    <button onclick="addMultipleStudents()">إضافة الطلاب دفعة واحدة</button>
+                </div>
+                <button class="toggle-btn" onclick="toggleMultipleStudentsInput()">إخفاء الحقل</button>
+            </div>
+            <div class="filter-section">
+                <button class="filter-btn" onclick="filterKashfTable()">تصفية</button>
+                <select id="filterKashfGrade" onchange="updateKashfSections()">
+                    <option value="">جميع الصفوف</option>
+                    <option value="الأول متوسط">الأول متوسط</option>
+                    <option value="الثاني متوسط">الثاني متوسط</option>
+                    <option value="الثالث متوسط">الثالث متوسط</option>
+                </select>
+                <select id="filterKashfSection" onchange="filterKashfTable()">
+                    <option value="">جميع الفصول</option>
+                </select>
+            </div>
+            <table id="dailyTable">
+                <thead>
+                    <tr>
+                        <th style="width: 30px;">تحريك</th>
+                        <th>الاسم</th>
+                        <th>الصف</th>
+                        <th>الفصل</th>
+                        <th>السلوك</th>
+                        <th>الدرجة</th>
+                        <th>حفظ</th>
+                        <th>حذف</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- تبويب المشاركة والواجبات -->
+        <div id="participation" class="tabcontent">
+            <div class="filter-section">
+                <button class="filter-btn" onclick="updateParticipationTable()">تصفية</button>
+                <select id="filterParticipationGrade" onchange="updateParticipationSections()">
+                    <option value="">جميع الصفوف</option>
+                    <option value="الأول متوسط">الأول متوسط</option>
+                    <option value="الثاني متوسط">الثاني متوسط</option>
+                    <option value="الثالث متوسط">الثالث متوسط</option>
+                </select>
+                <select id="filterParticipationSection" onchange="updateParticipationTable()">
+                    <option value="">جميع الفصول</option>
+                </select>
+            </div>
+            <table id="participationTable">
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>م</th>
+                        <th>درجة المشاركة</th>
+                        <th>و</th>
+                        <th>درجة الواجب</th>
+                    </tr>
+                </thead>
+                <tbody id="participationTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- تبويب جدول الإدخال -->
+        <div id="inputTable" class="tabcontent">
+            <div class="filter-section">
+                <button class="filter-btn" onclick="filterSavedTable()">تصفية حسب الصف</button>
+                <select id="filterGrade" onchange="filterSavedTable()">
+                    <option value="">جميع الصفوف</option>
+                    <option value="الأول متوسط">الأول متوسط</option>
+                    <option value="الثاني متوسط">الثاني متوسط</option>
+                    <option value="الثالث متوسط">الثالث متوسط</option>
+                </select>
+                <button class="export-btn" onclick="exportToExcel()">تصدير إلى Excel</button>
+            </div>
+            <table id="savedTable">
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>الصف</th>
+                        <th>الفصل</th>
+                        <th>السلوك</th>
+                        <th>الدرجة</th>
+                        <th>التاريخ</th>
+                        <th>ملاحظات على الطالب</th>
+                        <th>حذف</th>
+                    </tr>
+                </thead>
+                <tbody id="savedTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- تبويب الإحصائيات -->
+        <div id="stats" class="tabcontent">
+            <div class="control-section">
+                <select id="statsGrade" onchange="updateStatsSections(); updateStatsChart()">
+                    <option value="">اختر الصف</option>
+                    <option value="الأول متوسط">الأول متوسط</option>
+                    <option value="الثاني متوسط">الثاني متوسط</option>
+                    <option value="الثالث متوسط">الثالث متوسط</option>
+                </select>
+                <select id="statsSection" onchange="updateStatsChart()">
+                    <option value="">اختر الفصل</option>
+                </select>
+            </div>
+            <canvas id="statsChart"></canvas>
+        </div>
+
+        <!-- تبويب الكتب الدراسية -->
+        <div id="books" class="tabcontent">
+            <iframe id="booksIframe" src="https://ktby.net" title="الكتب الدراسية"></iframe>
+        </div>
+
+        <!-- تبويب الإرسال -->
+        <div id="send" class="tabcontent">
+            <div class="control-section">
+                <select id="sendSection" onchange="updateStudentList()">
+                    <option value="">اختر الفصل</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+                <select id="sendStudent" onchange="displayStudentDetails()">
+                    <option value="">اختر الطالب</option>
+                </select>
+            </div>
+            <table id="studentDetailsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>الصف</th>
+                        <th>الفصل</th>
+                        <th>جميع السلوكيات</th>
+                        <th>الدرجة</th>
+                        <th>ملاحظات على الطالب</th>
+                    </tr>
+                </thead>
+                <tbody id="studentDetailsBody"></tbody>
+            </table>
+            <div id="whatsappButton" style="display: none; margin-top: 10px;">
+                <button class="whatsapp-btn" onclick="sendToWhatsApp()">إرسال عبر واتساب</button>
+            </div>
+        </div>
+
+        <!-- تبويب الفيديو والصور -->
+        <div id="media" class="tabcontent">
+            <div class="control-section">
+                <input type="file" id="mediaUpload" accept="image/*,video/*" multiple style="display: none;" onchange="handleFileUpload(event)">
+                <button class="upload-btn" onclick="document.getElementById('mediaUpload').click()">رفع صورة أو فيديو</button>
+                <input type="text" id="mediaLink" placeholder="أدخل رابط الصورة أو الفيديو (مثل يوتيوب)">
+                <button class="add-link-btn" onclick="addMediaFromLink()">إضافة من رابط</button>
+            </div>
+            <div id="mediaContainer"></div>
+        </div>
+
+        <!-- تبويب ملفات PDF -->
+        <div id="pdf" class="tabcontent">
+            <div class="control-section">
+                <input type="file" id="pdfUpload" accept="application/pdf" multiple style="display: none;" onchange="handlePDFUpload(event)">
+                <button class="upload-btn" onclick="document.getElementById('pdfUpload').click()">رفع ملف PDF</button>
+                <input type="text" id="pdfLink" placeholder="أدخل رابط ملف PDF">
+                <button class="add-link-btn" onclick="addPDFFromLink()">إضافة من رابط</button>
+            </div>
+            <div id="pdfContainer"></div>
+        </div>
+
+        <!-- طبقة ملء الشاشة للصور -->
+        <div id="fullscreenOverlay" class="fullscreen-overlay">
+            <img id="fullscreenImage" src="" alt="صورة مكبرة">
+            <button class="close-btn" onclick="closeFullscreen()">إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        let students = [];
+        let savedStudents = [];
+        let participationData = {};
+        let mediaItems = [];
+        let pdfItems = [];
+        let statsChart = null;
+        let currentTab = 'kashf';
+        let historyStack = [];
+
+        window.onload = function() {
+            loadAllData();
+            setupDragAndDrop();
+        };
+
+        function loadAllData() {
+            loadKashfData();
+            loadSavedData();
+            loadParticipationData();
+            loadMediaData();
+            loadPDFData();
+        }
+
+        // دالة فتح التبويب (مع تصحيح الأخطاء)
+        function openTab(evt, tabName) {
+            console.log("Opening tab:", tabName); // تصحيح الأخطاء
+
+            // إخفاء جميع التبويبات
+            const tabcontent = document.getElementsByClassName("tabcontent");
+            if (tabcontent.length === 0) {
+                console.error("No elements with class 'tabcontent' found.");
+                return;
+            }
+            for (let i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // إزالة الـ active من جميع أزرار التبويبات
+            const tablinks = document.getElementsByClassName("tablinks");
+            if (tablinks.length === 0) {
+                console.error("No elements with class 'tablinks' found.");
+                return;
+            }
+            for (let i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+
+            // إظهار التبويب المحدد
+            const targetTab = document.getElementById(tabName);
+            if (targetTab) {
+                targetTab.style.display = "block";
+            } else {
+                console.error(`Tab with ID "${tabName}" not found.`);
+                return;
+            }
+
+            // إضافة الـ active للزر المضغوط
+            if (evt.currentTarget) {
+                evt.currentTarget.classList.add("active");
+            } else {
+                console.error("Event target is not defined.");
+                return;
+            }
+
+            currentTab = tabName;
+
+            // تحديث المحتوى بناءً على التبويب
+            try {
+                if (tabName === 'participation') {
+                    updateParticipationTable();
+                } else if (tabName === 'stats') {
+                    updateStatsChart();
+                } else if (tabName === 'send') {
+                    updateStudentList();
+                } else if (tabName === 'media') {
+                    renderMediaItems();
+                } else if (tabName === 'pdf') {
+                    renderPDFItems();
+                }
+            } catch (error) {
+                console.error(`Error in tab "${tabName}":`, error);
+            }
+        }
+
+        function addStudent() {
+            const studentName = document.getElementById('studentName').value.trim();
+            if (!studentName) {
+                alert('يرجى إدخال اسم الطالب');
+                return;
+            }
+            const student = {
+                name: studentName,
+                grade: '',
+                section: '',
+                behavior: '',
+                score: 20
+            };
+            students.push(student);
+            students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+            renderKashfTable();
+            document.getElementById('studentName').value = '';
+            saveKashfData();
+            saveToHistory();
+            filterKashfTable();
+            updateStudentList();
+            updateParticipationTable();
+        }
+
+        function addMultipleStudents() {
+            const multipleStudentsInput = document.getElementById('multipleStudents').value.trim();
+            if (!multipleStudentsInput) {
+                alert('يرجى إدخال أسماء الطلاب');
+                return;
+            }
+            const studentNames = multipleStudentsInput.split('\n').map(name => name.trim()).filter(name => name);
+            studentNames.forEach(name => {
+                const student = {
+                    name: name,
+                    grade: '',
+                    section: '',
+                    behavior: '',
+                    score: 20
+                };
+                students.push(student);
+            });
+            students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+            renderKashfTable();
+            document.getElementById('multipleStudents').value = '';
+            saveKashfData();
+            saveToHistory();
+            filterKashfTable();
+            updateStudentList();
+            updateParticipationTable();
+        }
+
+        function toggleMultipleStudentsInput() {
+            const container = document.getElementById('multipleStudentsContainer');
+            const toggleButton = document.querySelector('.toggle-btn');
+            container.style.display = container.style.display === 'block' ? 'none' : 'block';
+            toggleButton.textContent = container.style.display === 'block' ? 'إخفاء الحقل' : 'إظهار الحقل';
+        }
+
+        function renderKashfTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            students.forEach((student, index) => {
+                const row = document.createElement('tr');
+                row.setAttribute('draggable', 'true');
+                row.innerHTML = `
+                    <td class="drag-handle">☰</td>
+                    <td><input type="text" value="${student.name}" onchange="updateStudent(${index}, 'name', this.value)"></td>
+                    <td>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="grade_${index}" value="الأول متوسط" ${student.grade === 'الأول متوسط' ? 'checked' : ''} onchange="updateStudent(${index}, 'grade', this)"> الأول متوسط</label>
+                            <label><input type="checkbox" name="grade_${index}" value="الثاني متوسط" ${student.grade === 'الثاني متوسط' ? 'checked' : ''} onchange="updateStudent(${index}, 'grade', this)"> الثاني متوسط</label>
+                            <label><input type="checkbox" name="grade_${index}" value="الثالث متوسط" ${student.grade === 'الثالث متوسط' ? 'checked' : ''} onchange="updateStudent(${index}, 'grade', this)"> الثالث متوسط</label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="section_${index}" value="1" ${student.section === '1' ? 'checked' : ''} onchange="updateStudent(${index}, 'section', this)"> 1</label>
+                            <label><input type="checkbox" name="section_${index}" value="2" ${student.section === '2' ? 'checked' : ''} onchange="updateStudent(${index}, 'section', this)"> 2</label>
+                            <label><input type="checkbox" name="section_${index}" value="3" ${student.section === '3' ? 'checked' : ''} onchange="updateStudent(${index}, 'section', this)"> 3</label>
+                        </div>
+                    </td>
+                    <td>
+                        <select onchange="updateStudent(${index}, 'behavior', this)">
+                            <option value="" ${student.behavior === '' ? 'selected' : ''}>اختر السلوك</option>
+                            <option value="forgotBook" ${student.behavior === 'forgotBook' ? 'selected' : ''}>نسي الكتاب</option>
+                            <option value="talking" ${student.behavior === 'talking' ? 'selected' : ''}>يتحدث أثناء الدرس</option>
+                            <option value="sleeping" ${student.behavior === 'sleeping' ? 'selected' : ''}>نايم</option>
+                            <option value="late" ${student.behavior === 'late' ? 'selected' : ''}>متأخر</option>
+                            <option value="fighting" ${student.behavior === 'fighting' ? 'selected' : ''}>مشاجرة</option>
+                            <option value="undo">رجوع</option>
+                        </select>
+                    </td>
+                    <td><input type="number" value="${student.score}" min="0" max="20" onchange="updateStudent(${index}, 'score', this.value)"></td>
+                    <td><button class="save-btn" onclick="saveStudent(${index})">حفظ</button></td>
+                    <td><button class="delete-btn" onclick="deleteStudent(${index})">حذف</button></td>
+                `;
+                tableBody.appendChild(row);
+                setupRowDragEvents(row);
+            });
+        }
+
+        function updateStudent(index, field, element) {
+            if (field === 'name') {
+                students[index].name = element.value.trim();
+                students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+                renderKashfTable();
+            } else if (field === 'grade') {
+                const checkboxes = document.getElementsByName(`grade_${index}`);
+                checkboxes.forEach(cb => { if (cb !== element) cb.checked = false; });
+                students[index].grade = element.checked ? element.value : '';
+            } else if (field === 'section') {
+                const checkboxes = document.getElementsByName(`section_${index}`);
+                checkboxes.forEach(cb => { if (cb !== element) cb.checked = false; });
+                students[index].section = element.checked ? element.value : '';
+            } else if (field === 'behavior') {
+                const behavior = element.value;
+                students[index].behavior = behavior;
+                if (behavior === 'undo') {
+                    undoLastAction();
+                    return;
+                }
+                if (behavior && behavior !== '') {
+                    let score = parseInt(students[index].score);
+                    if (score > 0) {
+                        students[index].score = score - 2;
+                    }
+                    renderKashfTable();
+                }
+            } else if (field === 'score') {
+                students[index].score = parseInt(element.value);
+            }
+            saveKashfData();
+            saveToHistory();
+            filterKashfTable();
+            updateStudentList();
+            updateParticipationTable();
+        }
+
+        function deleteStudent(index) {
+            students.splice(index, 1);
+            renderKashfTable();
+            saveKashfData();
+            saveToHistory();
+            filterKashfTable();
+            updateStudentList();
+            updateParticipationTable();
+        }
+
+        function deleteAllKashfRows() {
+            students = [];
+            renderKashfTable();
+            localStorage.removeItem('kashfData');
+            historyStack = [];
+            filterKashfTable();
+            updateStudentList();
+            participationData = {};
+            localStorage.removeItem('participationData');
+            updateParticipationTable();
+        }
+
+        function saveKashfData() {
+            localStorage.setItem('kashfData', JSON.stringify(students));
+        }
+
+        function loadKashfData() {
+            const data = localStorage.getItem('kashfData');
+            if (data) {
+                students = JSON.parse(data);
+                renderKashfTable();
+                filterKashfTable();
+                updateStudentList();
+                updateParticipationTable();
+            }
+        }
+
+        function updateKashfSections() {
+            const filterGrade = document.getElementById('filterKashfGrade').value;
+            const filterSection = document.getElementById('filterKashfSection');
+            filterSection.innerHTML = '<option value="">جميع الفصول</option>';
+            if (filterGrade) {
+                filterSection.innerHTML += '<option value="1">1</option><option value="2">2</option>';
+                if (filterGrade === 'الثالث متوسط') {
+                    filterSection.innerHTML += '<option value="3">3</option>';
+                }
+            }
+            filterKashfTable();
+        }
+
+        function filterKashfTable() {
+            const filterGrade = document.getElementById('filterKashfGrade').value;
+            const filterSection = document.getElementById('filterKashfSection').value;
+            const rows = document.getElementById('tableBody').getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const student = students[i];
+                const matchGrade = !filterGrade || student.grade === filterGrade;
+                const matchSection = !filterSection || student.section === filterSection;
+                rows[i].style.display = (matchGrade && matchSection) ? '' : 'none';
+            }
+        }
+
+        function saveToHistory() {
+            const tableBody = document.getElementById('tableBody');
+            const rows = Array.from(tableBody.getElementsByTagName('tr'));
+            const currentState = rows.map(row => row.innerHTML);
+            historyStack.push(currentState);
+        }
+
+        function undoLastAction() {
+            if (historyStack.length > 1) {
+                historyStack.pop();
+                const previousState = historyStack[historyStack.length - 1];
+                const tableBody = document.getElementById('tableBody');
+                tableBody.innerHTML = previousState.join('');
+                students = [];
+                Array.from(tableBody.getElementsByTagName('tr')).forEach((row, index) => {
+                    const name = row.querySelector('input[type="text"]').value;
+                    const grade = Array.from(row.querySelectorAll(`[name="grade_${index}"]`)).find(cb => cb.checked)?.value || '';
+                    const section = Array.from(row.querySelectorAll(`[name="section_${index}"]`)).find(cb => cb.checked)?.value || '';
+                    const behavior = row.querySelector('select').value;
+                    const score = parseInt(row.querySelector('input[type="number"]').value);
+                    students.push({ name, grade, section, behavior, score });
+                });
+                setupDragAndDrop();
+                saveKashfData();
+                filterKashfTable();
+                updateStudentList();
+                updateParticipationTable();
+            }
+        }
+
+        function updateParticipationSections() {
+            const filterGrade = document.getElementById('filterParticipationGrade').value;
+            const filterSection = document.getElementById('filterParticipationSection');
+            filterSection.innerHTML = '<option value="">جميع الفصول</option>';
+            if (filterGrade) {
+                filterSection.innerHTML += '<option value="1">1</option><option value="2">2</option>';
+                if (filterGrade === 'الثالث متوسط') {
+                    filterSection.innerHTML += '<option value="3">3</option>';
+                }
+            }
+            updateParticipationTable();
+        }
+
+        function updateParticipationTable() {
+            const filterGrade = document.getElementById('filterParticipationGrade').value;
+            const filterSection = document.getElementById('filterParticipationSection').value;
+            const participationTableBody = document.getElementById('participationTableBody');
+            participationTableBody.innerHTML = '';
+
+            let filteredStudents = students.filter(student => {
+                const matchGrade = !filterGrade || student.grade === filterGrade;
+                const matchSection = !filterSection || student.section === filterSection;
+                return matchGrade && matchSection && student.name.trim();
+            });
+
+            filteredStudents.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+            if (filteredStudents.length === 0) {
+                participationTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد أسماء طلاب لعرضها</td></tr>';
+                return;
+            }
+
+            filteredStudents.forEach(student => {
+                const name = student.name;
+                const studentData = participationData[name] || {
+                    participationChecks: Array(6).fill(false),
+                    participationScore: 10,
+                    homeworkChecks: Array(6).fill(false),
+                    homeworkScore: 10
+                };
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${name}</td>
+                    <td>
+                        <div class="checkbox-container">
+                            ${createCheckbox(name, 'participation', 0, studentData.participationChecks[0])}
+                            ${createCheckbox(name, 'participation', 1, studentData.participationChecks[1])}
+                            ${createCheckbox(name, 'participation', 2, studentData.participationChecks[2])}
+                            ${createCheckbox(name, 'participation', 3, studentData.participationChecks[3])}
+                            ${createCheckbox(name, 'participation', 4, studentData.participationChecks[4])}
+                            ${createCheckbox(name, 'participation', 5, studentData.participationChecks[5])}
+                        </div>
+                    </td>
+                    <td><span class="participation-score">${studentData.participationScore}</span></td>
+                    <td>
+                        <div class="checkbox-container">
+                            ${createCheckbox(name, 'homework', 0, studentData.homeworkChecks[0])}
+                            ${createCheckbox(name, 'homework', 1, studentData.homeworkChecks[1])}
+                            ${createCheckbox(name, 'homework', 2, studentData.homeworkChecks[2])}
+                            ${createCheckbox(name, 'homework', 3, studentData.homeworkChecks[3])}
+                            ${createCheckbox(name, 'homework', 4, studentData.homeworkChecks[4])}
+                            ${createCheckbox(name, 'homework', 5, studentData.homeworkChecks[5])}
+                        </div>
+                    </td>
+                    <td><span class="homework-score">${studentData.homeworkScore}</span></td>
+                `;
+                participationTableBody.appendChild(row);
+            });
+            saveParticipationData();
+        }
+
+        function createCheckbox(studentName, type, index, isChecked) {
+            return `
+                <label class="checkbox-label ${isChecked ? 'checked' : ''}">
+                    <input type="checkbox" name="${type}_${studentName}_${index}" ${isChecked ? 'checked' : ''} onchange="updateScoreForCheckbox(this, '${studentName}', '${type}', ${index})">
+                </label>
+            `;
+        }
+
+        function updateScoreForCheckbox(checkbox, studentName, type, index) {
+            const label = checkbox.parentElement;
+            const isChecked = checkbox.checked;
+            label.classList.toggle('checked', isChecked);
+
+            const row = checkbox.closest('tr');
+            const scoreElement = type === 'participation' ? row.querySelector('.participation-score') : row.querySelector('.homework-score');
+            let score = parseInt(scoreElement.textContent);
+
+            if (isChecked) {
+                score = Math.max(0, score - 1);
+            } else {
+                score = Math.min(10, score + 1);
+            }
+
+            scoreElement.textContent = score;
+
+            if (!participationData[studentName]) {
+                participationData[studentName] = {
+                    participationChecks: Array(6).fill(false),
+                    participationScore: 10,
+                    homeworkChecks: Array(6).fill(false),
+                    homeworkScore: 10
+                };
+            }
+            if (type === 'participation') {
+                participationData[studentName].participationChecks[index] = isChecked;
+                participationData[studentName].participationScore = score;
+            } else {
+                participationData[studentName].homeworkChecks[index] = isChecked;
+                participationData[studentName].homeworkScore = score;
+            }
+            saveParticipationData();
+        }
+
+        function saveParticipationData() {
+            localStorage.setItem('participationData', JSON.stringify(participationData));
+        }
+
+        function loadParticipationData() {
+            const data = localStorage.getItem('participationData');
+            if (data) {
+                participationData = JSON.parse(data);
+            }
+            updateParticipationTable();
+        }
+
+        function saveStudent(index) {
+            const student = students[index];
+            if (!student.grade) {
+                alert('يرجى اختيار الصف للطالب: ' + student.name);
+                return;
+            }
+            if (!student.section) {
+                alert('يرجى اختيار الفصل للطالب: ' + student.name);
+                return;
+            }
+            if (!student.behavior || student.behavior === '') {
+                alert('يرجى اختيار السلوك للطالب: ' + student.name);
+                return;
+            }
+
+            const now = new Date();
+            const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const day = dayNames[now.getDay()];
+            const dateTime = `${day} - ${now.toLocaleDateString('ar-SA')} ${now.toLocaleTimeString('ar-SA')}`;
+
+            const existingStudent = savedStudents.find(s => s.name === student.name);
+            if (existingStudent) {
+                existingStudent.behaviors.push(getBehaviorText(student.behavior));
+                existingStudent.dates.push(dateTime);
+                existingStudent.score = Math.max(0, existingStudent.score - 2);
+            } else {
+                savedStudents.push({
+                    name: student.name,
+                    grade: student.grade,
+                    section: student.section,
+                    behaviors: [getBehaviorText(student.behavior)],
+                    score: student.score,
+                    dates: [dateTime],
+                    notes: ''
+                });
+            }
+            renderSavedTable();
+            saveSavedData();
+            if (currentTab === 'stats') {
+                updateStatsChart();
+            }
+            displayStudentDetails();
+        }
+
+        function getBehaviorText(behavior) {
+            switch (behavior) {
+                case 'forgotBook': return 'نسي الكتاب';
+                case 'talking': return 'يتحدث أثناء الدرس';
+                case 'sleeping': return 'نايم';
+                case 'late': return 'متأخر';
+                case 'fighting': return 'مشاجرة';
+                default: return '';
+            }
+        }
+
+        function renderSavedTable() {
+            const savedTableBody = document.getElementById('savedTableBody');
+            savedTableBody.innerHTML = '';
+            savedStudents.forEach((student, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${student.name}</td>
+                    <td>${student.grade}</td>
+                    <td>${student.section}</td>
+                    <td>${student.behaviors.join('<br>')}</td>
+                    <td>${student.score}</td>
+                    <td>${student.dates.join('<br>')}</td>
+                    <td><input type="text" class="notes-input" value="${student.notes}" onchange="updateSavedStudent(${index}, this.value)"></td>
+                    <td><button class="delete-btn" onclick="deleteSavedStudent(${index})">حذف</button></td>
+                `;
+                savedTableBody.appendChild(row);
+            });
+        }
+
+        function updateSavedStudent(index, notes) {
+            savedStudents[index].notes = notes;
+            saveSavedData();
+            displayStudentDetails();
+        }
+
+        function deleteSavedStudent(index) {
+            savedStudents.splice(index, 1);
+            renderSavedTable();
+            saveSavedData();
+            if (currentTab === 'stats') {
+                updateStatsChart();
+            }
+            displayStudentDetails();
+        }
+
+        function saveSavedData() {
+            localStorage.setItem('savedData', JSON.stringify(savedStudents));
+        }
+
+        function loadSavedData() {
+            const data = localStorage.getItem('savedData');
+            if (data) {
+                savedStudents = JSON.parse(data);
+                renderSavedTable();
+            }
+        }
+
+        function filterSavedTable() {
+            const filterGrade = document.getElementById('filterGrade').value;
+            const rows = document.getElementById('savedTableBody').getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const grade = savedStudents[i].grade;
+                rows[i].style.display = (!filterGrade || grade === filterGrade) ? '' : 'none';
+            }
+            if (currentTab === 'stats') {
+                updateStatsChart();
+            }
+        }
+
+        function exportToExcel() {
+            const rows = document.getElementById('savedTable').getElementsByTagName('tr');
+            const data = [];
+            const headers = ['الاسم', 'الصف', 'الفصل', 'السلوك', 'الدرجة', 'التاريخ', 'ملاحظات على الطالب'];
+            data.push(headers);
+
+            for (let i = 0; i < savedStudents.length; i++) {
+                if (rows[i + 1].style.display === 'none') continue;
+                const student = savedStudents[i];
+                data.push([
+                    student.name,
+                    student.grade,
+                    student.section,
+                    student.behaviors.join('\n'),
+                    student.score,
+                    student.dates.join('\n'),
+                    student.notes
+                ]);
+            }
+
+            if (data.length <= 1) {
+                alert('لا توجد بيانات لتصديرها!');
+                return;
+            }
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "جدول الإدخال");
+            XLSX.writeFile(wb, "جدول_الإدخال.xlsx");
+        }
+
+        function updateStatsSections() {
+            const statsGrade = document.getElementById('statsGrade').value;
+            const statsSection = document.getElementById('statsSection');
+            statsSection.innerHTML = '<option value="">اختر الفصل</option>';
+            if (statsGrade) {
+                statsSection.innerHTML += '<option value="1">1</option><option value="2">2</option>';
+                if (statsGrade === 'الثالث متوسط') {
+                    statsSection.innerHTML += '<option value="3">3</option>';
+                }
+            }
+        }
+
+        function updateStatsChart() {
+            const selectedGrade = document.getElementById('statsGrade').value;
+            const selectedSection = document.getElementById('statsSection').value;
+
+            const behaviorCounts = {
+                "نسي الكتاب": 0,
+                "يتحدث أثناء الدرس": 0,
+                "نايم": 0,
+                "متأخر": 0,
+                "مشاجرة": 0
+            };
+
+            savedStudents.forEach(student => {
+                const matchGrade = !selectedGrade || student.grade === selectedGrade;
+                const matchSection = !selectedSection || student.section === selectedSection;
+                if (matchGrade && matchSection) {
+                    student.behaviors.forEach(behavior => {
+                        if (behaviorCounts.hasOwnProperty(behavior)) {
+                            behaviorCounts[behavior]++;
+                        }
+                    });
+                }
+            });
+
+            const labels = Object.keys(behaviorCounts).filter(label => behaviorCounts[label] > 0);
+            const data = labels.map(label => behaviorCounts[label]);
+            const colors = labels.map((_, i) => [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)'
+            ][i % 5]);
+
+            if (statsChart) {
+                statsChart.destroy();
+            }
+
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            statsChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'عدد السلوكيات',
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors.map(color => color.replace('0.7', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: {
+                            display: true,
+                            text: `إحصائيات السلوك للصف: ${selectedGrade || 'اختر صفًا'} - الفصل: ${selectedSection || 'اختر فصلًا'}`
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStudentList() {
+            const selectedSection = document.getElementById('sendSection').value;
+            const studentSelect = document.getElementById('sendStudent');
+            studentSelect.innerHTML = '<option value="">اختر الطالب</option>';
+
+            const filteredStudents = students.filter(student => !selectedSection || student.section === selectedSection);
+            filteredStudents.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+            filteredStudents.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.name;
+                option.text = student.name;
+                studentSelect.add(option);
+            });
+
+            displayStudentDetails();
+        }
+
+        function displayStudentDetails() {
+            const selectedStudent = document.getElementById('sendStudent').value;
+            const studentDetailsTable = document.getElementById('studentDetailsTable');
+            const studentDetailsBody = document.getElementById('studentDetailsBody');
+            const whatsappButton = document.getElementById('whatsappButton');
+            studentDetailsBody.innerHTML = '';
+
+            if (!selectedStudent) {
+                studentDetailsTable.style.display = 'none';
+                whatsappButton.style.display = 'none';
+                return;
+            }
+
+            const student = students.find(s => s.name === selectedStudent);
+            const savedStudent = savedStudents.find(s => s.name === selectedStudent);
+            if (!student) {
+                studentDetailsTable.style.display = 'none';
+                whatsappButton.style.display = 'none';
+                return;
+            }
+
+            const behaviors = savedStudent ? savedStudent.behaviors : [];
+            const score = savedStudent ? savedStudent.score : student.score;
+            const notes = savedStudent ? savedStudent.notes : '';
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${student.name}</td>
+                <td>${student.grade || 'غير محدد'}</td>
+                <td>${student.section || 'غير محدد'}</td>
+                <td>${behaviors.length > 0 ? behaviors.join('<br>') : 'لا توجد سلوكيات'}</td>
+                <td>${score}</td>
+                <td>${notes || 'لا توجد ملاحظات'}</td>
+            `;
+            studentDetailsBody.appendChild(row);
+            studentDetailsTable.style.display = '';
+            whatsappButton.style.display = '';
+        }
+
+        function sendToWhatsApp() {
+            const selectedStudent = document.getElementById('sendStudent').value;
+            if (!selectedStudent) {
+                alert('يرجى اختيار طالب لإرسال البيانات');
+                return;
+            }
+
+            const row = document.getElementById('studentDetailsBody').getElementsByTagName('tr')[0];
+            const name = row.cells[0].textContent;
+            const grade = row.cells[1].textContent;
+            const section = row.cells[2].textContent;
+            const behaviors = row.cells[3].innerHTML.replace(/<br>/g, '\n');
+            const score = row.cells[4].textContent;
+            const notes = row.cells[5].textContent;
+
+            const message = `بيانات الطالب:\n` +
+                           `الاسم: ${name}\n` +
+                           `الصف: ${grade}\n` +
+                           `الفصل: ${section}\n` +
+                           `السلوكيات:\n${behaviors}\n` +
+                           `الدرجة: ${score}\n` +
+                           `ملاحظات على الطالب: ${notes}`;
+
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const mediaData = {
+                        type: file.type.startsWith('image') ? 'image' : 'video',
+                        src: e.target.result,
+                        description: ''
+                    };
+                    mediaItems.push(mediaData);
+                    renderMediaItems();
+                    saveMediaData();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function addMediaFromLink() {
+            const link = document.getElementById('mediaLink').value.trim();
+            if (!link) {
+                alert('يرجى إدخال رابط الصورة أو الفيديو');
+                return;
+            }
+
+            let mediaData;
+            if (link.includes('youtube.com') || link.includes('youtu.be')) {
+                const videoId = link.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
+                if (videoId) {
+                    mediaData = { type: 'youtube', src: `https://www.youtube.com/embed/${videoId}`, description: '' };
+                } else {
+                    alert('رابط يوتيوب غير صالح');
+                    return;
+                }
+            } else if (link.match(/\.(jpeg|jpg|png|gif)$/i)) {
+                mediaData = { type: 'image', src: link, description: '' };
+            } else if (link.match(/\.(mp4|webm|ogg)$/i)) {
+                mediaData = { type: 'video', src: link, description: '' };
+            } else {
+                alert('الرابط غير مدعوم (يجب أن يكون رابط يوتيوب أو صورة أو فيديو)');
+                return;
+            }
+
+            mediaItems.push(mediaData);
+            renderMediaItems();
+            saveMediaData();
+            document.getElementById('mediaLink').value = '';
+        }
+
+        function renderMediaItems() {
+            const mediaContainer = document.getElementById('mediaContainer');
+            mediaContainer.innerHTML = '';
+            mediaItems.forEach((media, index) => {
+                const mediaItem = document.createElement('div');
+                mediaItem.classList.add('media-item');
+                mediaItem.setAttribute('draggable', 'true');
+                let mediaElement;
+                if (media.type === 'image') {
+                    mediaElement = `<img src="${media.src}" alt="صورة" ondblclick="openFullscreen('${media.src}')">`;
+                } else if (media.type === 'video') {
+                    mediaElement = `<video src="${media.src}" controls></video>`;
+                } else if (media.type === 'youtube') {
+                    mediaElement = `<iframe src="${media.src}" frameborder="0" allowfullscreen></iframe>`;
+                }
+                mediaItem.innerHTML = `
+                    <span class="drag-handle">☰</span>
+                    ${mediaElement}
+                    <textarea placeholder="أدخل وصفًا أو ملاحظات" onchange="updateMediaDescription(${index}, this.value)">${media.description}</textarea>
+                    <button class="delete-btn" onclick="deleteMediaItem(${index})">حذف</button>
+                `;
+                mediaContainer.appendChild(mediaItem);
+                setupMediaDragEvents(mediaItem);
+            });
+        }
+
+        function updateMediaDescription(index, description) {
+            mediaItems[index].description = description;
+            saveMediaData();
+        }
+
+        function deleteMediaItem(index) {
+            mediaItems.splice(index, 1);
+            renderMediaItems();
+            saveMediaData();
+        }
+
+        function saveMediaData() {
+            localStorage.setItem('mediaData', JSON.stringify(mediaItems));
+        }
+
+        function loadMediaData() {
+            const data = localStorage.getItem('mediaData');
+            if (data) {
+                mediaItems = JSON.parse(data);
+                renderMediaItems();
+            }
+        }
+
+        function openFullscreen(src) {
+            const overlay = document.getElementById('fullscreenOverlay');
+            const fullscreenImage = document.getElementById('fullscreenImage');
+            fullscreenImage.src = src;
+            overlay.style.display = 'flex';
+        }
+
+        function closeFullscreen() {
+            document.getElementById('fullscreenOverlay').style.display = 'none';
+        }
+
+        // تبويب ملفات PDF
+        function handlePDFUpload(event) {
+            const files = event.target.files;
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const pdfData = {
+                        name: file.name,
+                        src: e.target.result,
+                        description: '',
+                        isLocal: true
+                    };
+                    pdfItems.push(pdfData);
+                    renderPDFItems();
+                    savePDFData();
+                    alert(`تم حفظ ملف "${file.name}" تلقائيًا.`);
+                };
+                reader.onerror = function() {
+                    alert('حدث خطأ أثناء قراءة ملف PDF: ' + file.name);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function addPDFFromLink() {
+            const link = document.getElementById('pdfLink').value.trim();
+            if (!link) {
+                alert('يرجى إدخال رابط ملف PDF');
+                return;
+            }
+            if (!link.match(/\.(pdf)$/i)) {
+                alert('الرابط يجب أن يكون لملف PDF');
+                return;
+            }
+            const pdfData = {
+                name: link.split('/').pop() || 'ملف PDF',
+                src: link,
+                description: '',
+                isLocal: false
+            };
+            pdfItems.push(pdfData);
+            renderPDFItems();
+            savePDFData();
+            alert(`تم حفظ ملف "${pdfData.name}" تلقائيًا.`);
+            document.getElementById('pdfLink').value = '';
+        }
+
+        function renderPDFItems() {
+            const pdfContainer = document.getElementById('pdfContainer');
+            pdfContainer.innerHTML = '';
+            pdfItems.forEach((pdf, index) => {
+                const pdfItem = document.createElement('div');
+                pdfItem.classList.add('pdf-item');
+                pdfItem.setAttribute('draggable', 'true');
+                
+                let pdfDisplay;
+                if (pdf.isLocal) {
+                    pdfDisplay = `
+                        <embed src="${pdf.src}" type="application/pdf" title="${pdf.name}">
+                        <button class="open-btn" onclick="openPDFInNewTab(${index})">فتح في صفحة جديدة</button>
+                    `;
+                } else {
+                    pdfDisplay = `<a href="${pdf.src}" target="_blank">${pdf.name}</a>`;
+                }
+
+                pdfItem.innerHTML = `
+                    <span class="drag-handle">☰</span>
+                    ${pdfDisplay}
+                    <textarea placeholder="أدخل وصفًا أو ملاحظات" onchange="updatePDFDescription(${index}, this.value)">${pdf.description}</textarea>
+                    <button class="delete-btn" onclick="deletePDFItem(${index})">حذف</button>
+                `;
+                pdfContainer.appendChild(pdfItem);
+                setupPDFDragEvents(pdfItem);
+            });
+        }
+
+        function openPDFInNewTab(index) {
+            const pdf = pdfItems[index];
+            if (pdf.isLocal) {
+                const dataUrl = pdf.src;
+                const base64String = dataUrl.split(',')[1];
+                const byteCharacters = atob(base64String);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } else {
+                window.open(pdf.src, '_blank');
+            }
+        }
+
+        function updatePDFDescription(index, description) {
+            pdfItems[index].description = description;
+            savePDFData();
+        }
+
+        function deletePDFItem(index) {
+            pdfItems.splice(index, 1);
+            renderPDFItems();
+            savePDFData();
+        }
+
+        function savePDFData() {
+            localStorage.setItem('pdfData', JSON.stringify(pdfItems));
+        }
+
+        function loadPDFData() {
+            const data = localStorage.getItem('pdfData');
+            if (data) {
+                pdfItems = JSON.parse(data);
+                renderPDFItems();
+            }
+        }
+
+        function setupRowDragEvents(row) {
+            row.addEventListener('dragstart', (e) => {
+                row.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', row.rowIndex);
+            });
+
+            row.addEventListener('dragend', () => {
+                row.classList.remove('dragging');
+            });
+
+            row.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            row.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                const targetIndex = Array.from(row.parentNode.children).indexOf(row);
+                if (draggedIndex !== targetIndex) {
+                    const [draggedStudent] = students.splice(draggedIndex, 1);
+                    students.splice(targetIndex, 0, draggedStudent);
+                    renderKashfTable();
+                    saveKashfData();
+                }
+            });
+        }
+
+        function setupMediaDragEvents(mediaItem) {
+            mediaItem.addEventListener('dragstart', (e) => {
+                mediaItem.classList.add('dragging');
+                const index = Array.from(mediaItem.parentNode.children).indexOf(mediaItem);
+                e.dataTransfer.setData('text/plain', index);
+            });
+
+            mediaItem.addEventListener('dragend', () => {
+                mediaItem.classList.remove('dragging');
+            });
+
+            mediaItem.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            mediaItem.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                const targetIndex = Array.from(mediaItem.parentNode.children).indexOf(mediaItem);
+                if (draggedIndex !== targetIndex) {
+                    const [draggedMedia] = mediaItems.splice(draggedIndex, 1);
+                    mediaItems.splice(targetIndex, 0, draggedMedia);
+                    renderMediaItems();
+                    saveMediaData();
+                }
+            });
+        }
+
+        function setupPDFDragEvents(pdfItem) {
+            pdfItem.addEventListener('dragstart', (e) => {
+                pdfItem.classList.add('dragging');
+                const index = Array.from(pdfItem.parentNode.children).indexOf(pdfItem);
+                e.dataTransfer.setData('text/plain', index);
+            });
+
+            pdfItem.addEventListener('dragend', () => {
+                pdfItem.classList.remove('dragging');
+            });
+
+            pdfItem.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            pdfItem.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                const targetIndex = Array.from(pdfItem.parentNode.children).indexOf(pdfItem);
+                if (draggedIndex !== targetIndex) {
+                    const [draggedPDF] = pdfItems.splice(draggedIndex, 1);
+                    pdfItems.splice(targetIndex, 0, draggedPDF);
+                    renderPDFItems();
+                    savePDFData();
+                }
+            });
+        }
+
+        function setupDragAndDrop() {
+            const tableBody = document.getElementById('tableBody');
+            const rows = tableBody.getElementsByTagName('tr');
+            for (let row of rows) {
+                setupRowDragEvents(row);
+            }
+
+            const mediaContainer = document.getElementById('mediaContainer');
+            const mediaItems = mediaContainer.getElementsByClassName('media-item');
+            for (let item of mediaItems) {
+                setupMediaDragEvents(item);
+            }
+
+            const pdfContainer = document.getElementById('pdfContainer');
+            const pdfItems = pdfContainer.getElementsByClassName('pdf-item');
+            for (let item of pdfItems) {
+                setupPDFDragEvents(item);
+            }
+        }
+    </script>
+</body>
+</html>
