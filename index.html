@@ -286,6 +286,15 @@
         }
         .media-container {
             display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .media-column {
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+            display: flex;
             flex-direction: column;
             align-items: center;
             gap: 20px;
@@ -293,7 +302,6 @@
         .media-slide-container {
             position: relative;
             width: 100%;
-            max-width: 600px;
             text-align: center;
         }
         .media-slide {
@@ -340,6 +348,11 @@
             max-width: 200px;
             max-height: 200px;
             border-radius: 4px;
+        }
+        .video-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
     </style>
 </head>
@@ -508,7 +521,7 @@
                 <tbody id="studentDetailsBody"></tbody>
             </table>
             <div id="whatsappButton" style="display: none; margin-top: 10px;">
-                <button class="whatsapp-btn" onclick="sendToWhatsApp()">إرسال عبر واتساب</button>
+                <button NOLINKIFY class="whatsapp-btn" onclick="sendToWhatsApp()">إرسال عبر واتساب</button>
             </div>
         </div>
 
@@ -520,6 +533,7 @@
                 <button class="add-link-btn" onclick="addMediaFromLink()">إضافة من رابط</button>
             </div>
             <div id="mediaContainer" class="media-container"></div>
+            <div id="videoContainer" class="video-container"></div>
         </div>
 
         <div id="pdf" class="tabcontent">
@@ -544,13 +558,15 @@
         let students = [];
         let savedStudents = [];
         let participationData = {};
-        let mediaItems = [];
+        let mediaGroups = []; // Now an array of groups (each group is an array of media items)
+        let videoItems = []; // Separate array for videos and YouTube links
         let pdfItems = [];
         let statsChart = null;
         let currentTab = 'kashf';
         let historyStack = [];
         let currentImageIndex = -1;
         let imageSources = [];
+        let currentGroupIndex = -1;
 
         window.onload = function() {
             loadAllData();
@@ -563,6 +579,7 @@
             loadSavedData();
             loadParticipationData();
             loadMediaData();
+            loadVideoData();
             loadPDFData();
         }
 
@@ -597,6 +614,7 @@
                     updateFilteredStudentList();
                 } else if (tabName === 'media') {
                     renderMediaItems();
+                    renderVideoItems();
                 } else if (tabName === 'pdf') {
                     renderPDFItems();
                 } else if (tabName === 'kashf') {
@@ -1148,22 +1166,71 @@
 
         function handleFileUpload(event) {
             const files = event.target.files;
+            const imageFiles = [];
+            const videoFiles = [];
+
+            // Separate images and videos
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const mediaItem = {
-                        src: e.target.result,
-                        type: file.type.startsWith('image') ? 'image' : 'video',
-                        description: ''
-                    };
-                    mediaItems.push(mediaItem);
-                    renderMediaItems();
-                    saveMediaData();
-                    saveToHistory();
-                };
-                reader.readAsDataURL(file);
+                if (file.type.startsWith('image')) {
+                    imageFiles.push(file);
+                } else if (file.type.startsWith('video')) {
+                    videoFiles.push(file);
+                }
             }
+
+            // Handle images (add as a new group)
+            if (imageFiles.length > 0) {
+                const newImageGroup = [];
+                let loadedImages = 0;
+
+                imageFiles.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const mediaItem = {
+                            src: e.target.result,
+                            type: 'image',
+                            description: ''
+                        };
+                        newImageGroup.push(mediaItem);
+                        loadedImages++;
+
+                        // Once all images in this batch are loaded, add the group
+                        if (loadedImages === imageFiles.length) {
+                            mediaGroups.push(newImageGroup);
+                            renderMediaItems();
+                            saveMediaData();
+                            saveToHistory();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // Handle videos (add individually to videoItems)
+            if (videoFiles.length > 0) {
+                let loadedVideos = 0;
+                videoFiles.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const videoItem = {
+                            src: e.target.result,
+                            type: 'video',
+                            description: ''
+                        };
+                        videoItems.push(videoItem);
+                        loadedVideos++;
+
+                        if (loadedVideos === videoFiles.length) {
+                            renderVideoItems();
+                            saveVideoData();
+                            saveToHistory();
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
             document.getElementById('mediaUpload').value = '';
         }
 
@@ -1178,54 +1245,75 @@
                 type: link.includes('youtube.com') || link.includes('youtu.be') ? 'youtube' : 'image',
                 description: ''
             };
-            mediaItems.push(mediaItem);
-            renderMediaItems();
+
+            if (mediaItem.type === 'image') {
+                // Add as a new group with a single image
+                mediaGroups.push([mediaItem]);
+                renderMediaItems();
+                saveMediaData();
+            } else {
+                // Add to video items
+                videoItems.push(mediaItem);
+                renderVideoItems();
+                saveVideoData();
+            }
+
             document.getElementById('mediaLink').value = '';
-            saveMediaData();
             saveToHistory();
         }
 
         function renderMediaItems() {
             const container = document.getElementById('mediaContainer');
             container.innerHTML = '';
-            const images = mediaItems.filter(item => item.type === 'image');
-            const videos = mediaItems.filter(item => item.type !== 'image');
 
-            if (images.length > 0) {
+            mediaGroups.forEach((group, groupIndex) => {
+                if (group.length === 0) return; // Skip empty groups
+
+                const column = document.createElement('div');
+                column.className = 'media-column';
+
                 const slideContainer = document.createElement('div');
                 slideContainer.className = 'media-slide-container';
-                images.forEach((item, index) => {
+                slideContainer.setAttribute('data-group-index', groupIndex);
+
+                group.forEach((item, index) => {
                     const slide = document.createElement('div');
                     slide.className = `media-slide ${index === 0 ? 'active' : ''}`;
                     slide.innerHTML = `
-                        <img src="${item.src}" onclick="openFullscreen(${index})">
-                        <textarea placeholder="أدخل وصفًا للصورة" onchange="updateMediaDescription(${mediaItems.indexOf(item)}, this.value)">${item.description}</textarea>
+                        <img src="${item.src}" onclick="openFullscreen(${groupIndex}, ${index})">
+                        <textarea placeholder="أدخل وصفًا للصورة" onchange="updateMediaDescription(${groupIndex}, ${index}, this.value)">${item.description}</textarea>
                     `;
                     slideContainer.appendChild(slide);
                 });
 
-                if (images.length > 1) {
+                if (group.length > 1) {
                     const controls = document.createElement('div');
                     controls.className = 'media-slide-controls';
                     controls.innerHTML = `
-                        <button class="nav-btn" onclick="changeSlide(-1)">❮</button>
-                        <button class="delete-btn" onclick="deleteMediaItem(${mediaItems.indexOf(images[0])})">حذف</button>
-                        <button class="nav-btn" onclick="changeSlide(1)">❯</button>
+                        <button class="nav-btn" onclick="changeSlide(${groupIndex}, -1)">❮</button>
+                        <button class="delete-btn" onclick="deleteMediaItem(${groupIndex}, 0)">حذف</button>
+                        <button class="nav-btn" onclick="changeSlide(${groupIndex}, 1)">❯</button>
                     `;
                     slideContainer.appendChild(controls);
                 } else {
                     const controls = document.createElement('div');
                     controls.className = 'media-slide-controls';
                     controls.innerHTML = `
-                        <button class="delete-btn" onclick="deleteMediaItem(${mediaItems.indexOf(images[0])})">حذف</button>
+                        <button class="delete-btn" onclick="deleteMediaItem(${groupIndex}, 0)">حذف</button>
                     `;
                     slideContainer.appendChild(controls);
                 }
 
-                container.appendChild(slideContainer);
-            }
+                column.appendChild(slideContainer);
+                container.appendChild(column);
+            });
+        }
 
-            videos.forEach((item, index) => {
+        function renderVideoItems() {
+            const container = document.getElementById('videoContainer');
+            container.innerHTML = '';
+
+            videoItems.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'media-item video-item';
                 let mediaElement = '';
@@ -1237,43 +1325,62 @@
                 }
                 div.innerHTML = `
                     ${mediaElement}
-                    <textarea placeholder="أدخل وصفًا للفيديو" onchange="updateMediaDescription(${mediaItems.indexOf(item)}, this.value)">${item.description}</textarea>
-                    <button class="delete-btn" onclick="deleteMediaItem(${mediaItems.indexOf(item)})">حذف</button>
+                    <textarea placeholder="أدخل وصفًا للفيديو" onchange="updateVideoDescription(${index}, this.value)">${item.description}</textarea>
+                    <button class="delete-btn" onclick="deleteVideoItem(${index})">حذف</button>
                 `;
                 container.appendChild(div);
             });
-
-            imageSources = images.map(item => item.src);
         }
 
-        function changeSlide(direction) {
-            const slides = document.querySelectorAll('.media-slide');
+        function changeSlide(groupIndex, direction) {
+            const slideContainer = document.querySelector(`.media-slide-container[data-group-index="${groupIndex}"]`);
+            const slides = slideContainer.querySelectorAll('.media-slide');
             let currentIndex = Array.from(slides).findIndex(slide => slide.classList.contains('active'));
             slides[currentIndex].classList.remove('active');
             currentIndex = (currentIndex + direction + slides.length) % slides.length;
             slides[currentIndex].classList.add('active');
 
-            const deleteBtn = document.querySelector('.media-slide-controls .delete-btn');
-            deleteBtn.setAttribute('onclick', `deleteMediaItem(${mediaItems.indexOf(mediaItems.filter(item => item.type === 'image')[currentIndex])})`);
+            const deleteBtn = slideContainer.querySelector('.media-slide-controls .delete-btn');
+            deleteBtn.setAttribute('onclick', `deleteMediaItem(${groupIndex}, ${currentIndex})`);
         }
 
-        function updateMediaDescription(index, description) {
-            mediaItems[index].description = description;
+        function updateMediaDescription(groupIndex, index, description) {
+            mediaGroups[groupIndex][index].description = description;
             saveMediaData();
             saveToHistory();
         }
 
-        function deleteMediaItem(index) {
-            if (confirm('هل أنت متأكد من حذف هذا العنصر؟')) {
-                mediaItems.splice(index, 1);
+        function updateVideoDescription(index, description) {
+            videoItems[index].description = description;
+            saveVideoData();
+            saveToHistory();
+        }
+
+        function deleteMediaItem(groupIndex, index) {
+            if (confirm('هل أنت متأكد من حذف هذه الصورة؟')) {
+                mediaGroups[groupIndex].splice(index, 1);
+                if (mediaGroups[groupIndex].length === 0) {
+                    mediaGroups.splice(groupIndex, 1);
+                }
                 renderMediaItems();
                 saveMediaData();
                 saveToHistory();
             }
         }
 
-        function openFullscreen(index) {
+        function deleteVideoItem(index) {
+            if (confirm('هل أنت متأكد من حذف هذا الفيديو؟')) {
+                videoItems.splice(index, 1);
+                renderVideoItems();
+                saveVideoData();
+                saveToHistory();
+            }
+        }
+
+        function openFullscreen(groupIndex, index) {
+            currentGroupIndex = groupIndex;
             currentImageIndex = index;
+            imageSources = mediaGroups[groupIndex].map(item => item.src);
             const overlay = document.getElementById('fullscreenOverlay');
             const img = document.getElementById('fullscreenImage');
             img.src = imageSources[currentImageIndex];
@@ -1285,6 +1392,8 @@
             const overlay = document.getElementById('fullscreenOverlay');
             overlay.style.display = 'none';
             currentImageIndex = -1;
+            currentGroupIndex = -1;
+            imageSources = [];
         }
 
         function navigateImages(direction) {
@@ -1422,14 +1531,26 @@
         }
 
         function saveMediaData() {
-            localStorage.setItem('mediaItems', JSON.stringify(mediaItems));
+            localStorage.setItem('mediaGroups', JSON.stringify(mediaGroups));
         }
 
         function loadMediaData() {
-            const data = localStorage.getItem('mediaItems');
+            const data = localStorage.getItem('mediaGroups');
             if (data) {
-                mediaItems = JSON.parse(data);
+                mediaGroups = JSON.parse(data);
                 renderMediaItems();
+            }
+        }
+
+        function saveVideoData() {
+            localStorage.setItem('videoItems', JSON.stringify(videoItems));
+        }
+
+        function loadVideoData() {
+            const data = localStorage.getItem('videoItems');
+            if (data) {
+                videoItems = JSON.parse(data);
+                renderVideoItems();
             }
         }
 
@@ -1450,7 +1571,8 @@
                 students: JSON.parse(JSON.stringify(students)),
                 savedStudents: JSON.parse(JSON.stringify(savedStudents)),
                 participationData: JSON.parse(JSON.stringify(participationData)),
-                mediaItems: JSON.parse(JSON.stringify(mediaItems)),
+                mediaGroups: JSON.parse(JSON.stringify(mediaGroups)),
+                videoItems: JSON.parse(JSON.stringify(videoItems)),
                 pdfItems: JSON.parse(JSON.stringify(pdfItems))
             };
             historyStack.push(state);
