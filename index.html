@@ -558,7 +558,7 @@
         let students = [];
         let savedStudents = [];
         let participationData = {};
-        let mediaGroups = []; // Now an array of groups (each group is an array of media items)
+        let mediaGroups = []; // Array of groups (each group is an array of media items)
         let videoItems = []; // Separate array for videos and YouTube links
         let pdfItems = [];
         let statsChart = null;
@@ -568,19 +568,56 @@
         let imageSources = [];
         let currentGroupIndex = -1;
 
-        window.onload = function() {
-            loadAllData();
-            renderKashfTable();
-            openTab({ currentTarget: document.querySelector('.tablinks.kashf-tab') }, 'kashf');
+        // Initialize IndexedDB
+        let db;
+        const dbName = "KashfDB";
+        const dbVersion = 1;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, dbVersion);
+
+                request.onupgradeneeded = function(event) {
+                    db = event.target.result;
+                    if (!db.objectStoreNames.contains('mediaGroups')) {
+                        db.createObjectStore('mediaGroups', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!db.objectStoreNames.contains('videoItems')) {
+                        db.createObjectStore('videoItems', { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+
+                request.onsuccess = function(event) {
+                    db = event.target.result;
+                    resolve();
+                };
+
+                request.onerror = function(event) {
+                    console.error("Error opening IndexedDB:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        window.onload = async function() {
+            try {
+                await initDB();
+                await loadAllData();
+                renderKashfTable();
+                openTab({ currentTarget: document.querySelector('.tablinks.kashf-tab') }, 'kashf');
+            } catch (error) {
+                console.error("Error during initialization:", error);
+                alert("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.");
+            }
         };
 
-        function loadAllData() {
-            loadKashfData();
-            loadSavedData();
-            loadParticipationData();
-            loadMediaData();
-            loadVideoData();
-            loadPDFData();
+        async function loadAllData() {
+            await loadKashfData();
+            await loadSavedData();
+            await loadParticipationData();
+            await loadMediaData();
+            await loadVideoData();
+            await loadPDFData();
         }
 
         function openTab(evt, tabName) {
@@ -1164,7 +1201,7 @@
             window.open(whatsappUrl, '_blank');
         }
 
-        function handleFileUpload(event) {
+        async function handleFileUpload(event) {
             const files = event.target.files;
             const imageFiles = [];
             const videoFiles = [];
@@ -1182,59 +1219,39 @@
             // Handle images (add as a new group)
             if (imageFiles.length > 0) {
                 const newImageGroup = [];
-                let loadedImages = 0;
-
-                imageFiles.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const mediaItem = {
-                            src: e.target.result,
-                            type: 'image',
-                            description: ''
-                        };
-                        newImageGroup.push(mediaItem);
-                        loadedImages++;
-
-                        // Once all images in this batch are loaded, add the group
-                        if (loadedImages === imageFiles.length) {
-                            mediaGroups.push(newImageGroup);
-                            renderMediaItems();
-                            saveMediaData();
-                            saveToHistory();
-                        }
+                for (const file of imageFiles) {
+                    const mediaItem = {
+                        blob: file,
+                        type: 'image',
+                        description: ''
                     };
-                    reader.readAsDataURL(file);
-                });
+                    newImageGroup.push(mediaItem);
+                }
+                mediaGroups.push(newImageGroup);
+                await saveMediaData();
+                renderMediaItems();
+                saveToHistory();
             }
 
             // Handle videos (add individually to videoItems)
             if (videoFiles.length > 0) {
-                let loadedVideos = 0;
-                videoFiles.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const videoItem = {
-                            src: e.target.result,
-                            type: 'video',
-                            description: ''
-                        };
-                        videoItems.push(videoItem);
-                        loadedVideos++;
-
-                        if (loadedVideos === videoFiles.length) {
-                            renderVideoItems();
-                            saveVideoData();
-                            saveToHistory();
-                        }
+                for (const file of videoFiles) {
+                    const videoItem = {
+                        blob: file,
+                        type: 'video',
+                        description: ''
                     };
-                    reader.readAsDataURL(file);
-                });
+                    videoItems.push(videoItem);
+                }
+                await saveVideoData();
+                renderVideoItems();
+                saveToHistory();
             }
 
             document.getElementById('mediaUpload').value = '';
         }
 
-        function addMediaFromLink() {
+        async function addMediaFromLink() {
             const link = document.getElementById('mediaLink').value.trim();
             if (!link) {
                 alert('يرجى إدخال رابط الصورة أو الفيديو');
@@ -1249,13 +1266,13 @@
             if (mediaItem.type === 'image') {
                 // Add as a new group with a single image
                 mediaGroups.push([mediaItem]);
+                await saveMediaData();
                 renderMediaItems();
-                saveMediaData();
             } else {
                 // Add to video items
                 videoItems.push(mediaItem);
+                await saveVideoData();
                 renderVideoItems();
-                saveVideoData();
             }
 
             document.getElementById('mediaLink').value = '';
@@ -1279,8 +1296,14 @@
                 group.forEach((item, index) => {
                     const slide = document.createElement('div');
                     slide.className = `media-slide ${index === 0 ? 'active' : ''}`;
+                    let imgSrc = '';
+                    if (item.blob) {
+                        imgSrc = URL.createObjectURL(item.blob);
+                    } else if (item.src) {
+                        imgSrc = item.src;
+                    }
                     slide.innerHTML = `
-                        <img src="${item.src}" onclick="openFullscreen(${groupIndex}, ${index})">
+                        <img src="${imgSrc}" onclick="openFullscreen(${groupIndex}, ${index})">
                         <textarea placeholder="أدخل وصفًا للصورة" onchange="updateMediaDescription(${groupIndex}, ${index}, this.value)">${item.description}</textarea>
                     `;
                     slideContainer.appendChild(slide);
@@ -1318,7 +1341,8 @@
                 div.className = 'media-item video-item';
                 let mediaElement = '';
                 if (item.type === 'video') {
-                    mediaElement = `<video src="${item.src}" controls></video>`;
+                    const videoSrc = URL.createObjectURL(item.blob);
+                    mediaElement = `<video src="${videoSrc}" controls></video>`;
                 } else if (item.type === 'youtube') {
                     const videoId = item.src.includes('youtu.be') ? item.src.split('/').pop() : new URLSearchParams(new URL(item.src).search).get('v');
                     mediaElement = `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
@@ -1344,35 +1368,35 @@
             deleteBtn.setAttribute('onclick', `deleteMediaItem(${groupIndex}, ${currentIndex})`);
         }
 
-        function updateMediaDescription(groupIndex, index, description) {
+        async function updateMediaDescription(groupIndex, index, description) {
             mediaGroups[groupIndex][index].description = description;
-            saveMediaData();
+            await saveMediaData();
             saveToHistory();
         }
 
-        function updateVideoDescription(index, description) {
+        async function updateVideoDescription(index, description) {
             videoItems[index].description = description;
-            saveVideoData();
+            await saveVideoData();
             saveToHistory();
         }
 
-        function deleteMediaItem(groupIndex, index) {
+        async function deleteMediaItem(groupIndex, index) {
             if (confirm('هل أنت متأكد من حذف هذه الصورة؟')) {
                 mediaGroups[groupIndex].splice(index, 1);
                 if (mediaGroups[groupIndex].length === 0) {
                     mediaGroups.splice(groupIndex, 1);
                 }
+                await saveMediaData();
                 renderMediaItems();
-                saveMediaData();
                 saveToHistory();
             }
         }
 
-        function deleteVideoItem(index) {
+        async function deleteVideoItem(index) {
             if (confirm('هل أنت متأكد من حذف هذا الفيديو؟')) {
                 videoItems.splice(index, 1);
+                await saveVideoData();
                 renderVideoItems();
-                saveVideoData();
                 saveToHistory();
             }
         }
@@ -1380,7 +1404,7 @@
         function openFullscreen(groupIndex, index) {
             currentGroupIndex = groupIndex;
             currentImageIndex = index;
-            imageSources = mediaGroups[groupIndex].map(item => item.src);
+            imageSources = mediaGroups[groupIndex].map(item => item.blob ? URL.createObjectURL(item.blob) : item.src);
             const overlay = document.getElementById('fullscreenOverlay');
             const img = document.getElementById('fullscreenImage');
             img.src = imageSources[currentImageIndex];
@@ -1415,27 +1439,23 @@
             }
         }
 
-        function handlePDFUpload(event) {
+        async function handlePDFUpload(event) {
             const files = event.target.files;
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const pdfItem = {
-                        src: e.target.result,
-                        description: ''
-                    };
-                    pdfItems.push(pdfItem);
-                    renderPDFItems();
-                    savePDFData();
-                    saveToHistory();
+                const pdfItem = {
+                    blob: file,
+                    description: ''
                 };
-                reader.readAsDataURL(file);
+                pdfItems.push(pdfItem);
             }
+            await savePDFData();
+            renderPDFItems();
+            saveToHistory();
             document.getElementById('pdfUpload').value = '';
         }
 
-        function addPDFFromLink() {
+        async function addPDFFromLink() {
             const link = document.getElementById('pdfLink').value.trim();
             if (!link) {
                 alert('يرجى إدخال رابط ملف PDF');
@@ -1446,9 +1466,9 @@
                 description: ''
             };
             pdfItems.push(pdfItem);
+            await savePDFData();
             renderPDFItems();
             document.getElementById('pdfLink').value = '';
-            savePDFData();
             saveToHistory();
         }
 
@@ -1459,9 +1479,10 @@
                 const div = document.createElement('div');
                 div.className = 'pdf-item';
                 div.setAttribute('draggable', 'true');
+                let src = item.blob ? URL.createObjectURL(item.blob) : item.src;
                 div.innerHTML = `
-                    <embed src="${item.src}" type="application/pdf">
-                    <button class="open-btn" onclick="openPDFInNewTab('${item.src}')">فتح في صفحة جديدة</button>
+                    <embed src="${src}" type="application/pdf">
+                    <button class="open-btn" onclick="openPDFInNewTab('${src}')">فتح في صفحة جديدة</button>
                     <textarea placeholder="أدخل وصفًا للملف" onchange="updatePDFDescription(${index}, this.value)">${item.description}</textarea>
                     <button class="delete-btn" onclick="deletePDFItem(${index})">حذف</button>
                 `;
@@ -1479,17 +1500,17 @@
             }
         }
 
-        function updatePDFDescription(index, description) {
+        async function updatePDFDescription(index, description) {
             pdfItems[index].description = description;
-            savePDFData();
+            await savePDFData();
             saveToHistory();
         }
 
-        function deletePDFItem(index) {
+        async function deletePDFItem(index) {
             if (confirm('هل أنت متأكد من حذف هذا الملف؟')) {
                 pdfItems.splice(index, 1);
+                await savePDFData();
                 renderPDFItems();
-                savePDFData();
                 saveToHistory();
             }
         }
@@ -1498,7 +1519,7 @@
             localStorage.setItem('students', JSON.stringify(students));
         }
 
-        function loadKashfData() {
+        async function loadKashfData() {
             const data = localStorage.getItem('students');
             if (data) {
                 students = JSON.parse(data);
@@ -1510,7 +1531,7 @@
             localStorage.setItem('savedStudents', JSON.stringify(savedStudents));
         }
 
-        function loadSavedData() {
+        async function loadSavedData() {
             const data = localStorage.getItem('savedStudents');
             if (data) {
                 savedStudents = JSON.parse(data);
@@ -1522,7 +1543,7 @@
             localStorage.setItem('participationData', JSON.stringify(participationData));
         }
 
-        function loadParticipationData() {
+        async function loadParticipationData() {
             const data = localStorage.getItem('participationData');
             if (data) {
                 participationData = JSON.parse(data);
@@ -1530,35 +1551,99 @@
             }
         }
 
-        function saveMediaData() {
-            localStorage.setItem('mediaGroups', JSON.stringify(mediaGroups));
-        }
-
-        function loadMediaData() {
-            const data = localStorage.getItem('mediaGroups');
-            if (data) {
-                mediaGroups = JSON.parse(data);
-                renderMediaItems();
+        async function saveMediaData() {
+            const transaction = db.transaction(['mediaGroups'], 'readwrite');
+            const store = transaction.objectStore('mediaGroups');
+            // Clear existing data
+            await new Promise((resolve, reject) => {
+                const request = store.clear();
+                request.onsuccess = resolve;
+                request.onerror = () => reject(request.error);
+            });
+            // Save new data
+            for (const group of mediaGroups) {
+                const groupData = group.map(item => ({
+                    blob: item.blob || null,
+                    src: item.src || null,
+                    type: item.type,
+                    description: item.description
+                }));
+                await new Promise((resolve, reject) => {
+                    const request = store.add({ group: groupData });
+                    request.onsuccess = resolve;
+                    request.onerror = () => reject(request.error);
+                });
             }
         }
 
-        function saveVideoData() {
-            localStorage.setItem('videoItems', JSON.stringify(videoItems));
+        async function loadMediaData() {
+            const transaction = db.transaction(['mediaGroups'], 'readonly');
+            const store = transaction.objectStore('mediaGroups');
+            const request = store.getAll();
+            return new Promise((resolve, reject) => {
+                request.onsuccess = function() {
+                    mediaGroups = request.result.map(item => item.group);
+                    renderMediaItems();
+                    resolve();
+                };
+                request.onerror = function() {
+                    console.error("Error loading media data:", request.error);
+                    reject(request.error);
+                };
+            });
         }
 
-        function loadVideoData() {
-            const data = localStorage.getItem('videoItems');
-            if (data) {
-                videoItems = JSON.parse(data);
-                renderVideoItems();
+        async function saveVideoData() {
+            const transaction = db.transaction(['videoItems'], 'readwrite');
+            const store = transaction.objectStore('videoItems');
+            // Clear existing data
+            await new Promise((resolve, reject) => {
+                const request = store.clear();
+                request.onsuccess = resolve;
+                request.onerror = () => reject(request.error);
+            });
+            // Save new data
+            for (const item of videoItems) {
+                const videoData = {
+                    blob: item.blob || null,
+                    src: item.src || null,
+                    type: item.type,
+                    description: item.description
+                };
+                await new Promise((resolve, reject) => {
+                    const request = store.add(videoData);
+                    request.onsuccess = resolve;
+                    request.onerror = () => reject(request.error);
+                });
             }
+        }
+
+        async function loadVideoData() {
+            const transaction = db.transaction(['videoItems'], 'readonly');
+            const store = transaction.objectStore('videoItems');
+            const request = store.getAll();
+            return new Promise((resolve, reject) => {
+                request.onsuccess = function() {
+                    videoItems = request.result;
+                    renderVideoItems();
+                    resolve();
+                };
+                request.onerror = function() {
+                    console.error("Error loading video data:", request.error);
+                    reject(request.error);
+                };
+            });
         }
 
         function savePDFData() {
-            localStorage.setItem('pdfItems', JSON.stringify(pdfItems));
+            localStorage.setItem('pdfItems', JSON.stringify(pdfItems.map(item => ({
+                src: item.src || null,
+                blob: item.blob || null,
+                description: item.description
+            }))));
         }
 
-        function loadPDFData() {
+        async function loadPDFData() {
             const data = localStorage.getItem('pdfItems');
             if (data) {
                 pdfItems = JSON.parse(data);
@@ -1571,8 +1656,7 @@
                 students: JSON.parse(JSON.stringify(students)),
                 savedStudents: JSON.parse(JSON.stringify(savedStudents)),
                 participationData: JSON.parse(JSON.stringify(participationData)),
-                mediaGroups: JSON.parse(JSON.stringify(mediaGroups)),
-                videoItems: JSON.parse(JSON.stringify(videoItems)),
+                // Note: mediaGroups and videoItems are not included in history due to size
                 pdfItems: JSON.parse(JSON.stringify(pdfItems))
             };
             historyStack.push(state);
@@ -1588,7 +1672,8 @@
                 item.addEventListener('dragend', () => {
                     item.classList.remove('dragging');
                     const newOrder = Array.from(document.querySelectorAll('.pdf-item')).map(i => {
-                        const index = pdfItems.findIndex(p => p.src === i.querySelector('embed').src);
+                        const src = i.querySelector('embed').src;
+                        const index = pdfItems.findIndex(p => (p.src && p.src === src) || (p.blob && URL.createObjectURL(p.blob) === src));
                         return pdfItems[index];
                     });
                     pdfItems = newOrder;
