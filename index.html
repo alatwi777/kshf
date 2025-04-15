@@ -70,6 +70,9 @@
         th {
             background-color: #f2f2f2;
         }
+        .student-name {
+            font-weight: bold;
+        }
         select, input, textarea {
             padding: 5px;
             border: 1px solid #ccc;
@@ -136,11 +139,13 @@
             gap: 10px;
             margin-bottom: 10px;
         }
-        .drag-handle {
-            cursor: move;
-            font-size: 20px;
-            text-align: center;
-            color: #666;
+        .move-btn {
+            background-color: #2196F3;
+            padding: 4px 8px;
+            margin: 0 2px;
+        }
+        .move-btn:hover {
+            background-color: #0b7dda;
         }
         tr.dragging, .media-item.dragging, .pdf-item.dragging {
             opacity: 0.5;
@@ -248,9 +253,93 @@
         .fullscreen-overlay .close-btn:hover {
             background: #da190b;
         }
+        .fullscreen-overlay .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .fullscreen-overlay .nav-btn:hover {
+            background: #0b7dda;
+        }
+        .fullscreen-overlay .prev-btn {
+            left: 20px;
+        }
+        .fullscreen-overlay .next-btn {
+            right: 20px;
+        }
         #statsChart {
             max-width: 600px;
             margin: 20px auto;
+        }
+        .no-students-message {
+            color: #f44336;
+            font-weight: bold;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .media-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .media-slide-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+        .media-slide {
+            display: none;
+            width: 100%;
+        }
+        .media-slide.active {
+            display: block;
+        }
+        .media-slide img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .media-slide textarea {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .media-slide-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .media-slide-controls .delete-btn {
+            background-color: #f44336;
+        }
+        .media-slide-controls .delete-btn:hover {
+            background-color: #da190b;
+        }
+        .media-slide-controls .nav-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .media-slide-controls .nav-btn:hover {
+            background: #0b7dda;
+        }
+        .media-item.video-item img, .media-item.video-item video, .media-item.video-item iframe {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -258,7 +347,6 @@
     <div class="container">
         <h2>كشف المتابعة اليومي</h2>
 
-        <!-- تبويبات -->
         <div class="tab">
             <button class="tablinks kashf-tab active" onclick="openTab(event, 'kashf')">الكشف</button>
             <button class="tablinks participation-tab" onclick="openTab(event, 'participation')">المشاركة والواجبات</button>
@@ -270,7 +358,6 @@
             <button class="tablinks pdf-tab" onclick="openTab(event, 'pdf')">ملفات PDF</button>
         </div>
 
-        <!-- تبويب الكشف -->
         <div id="kashf" class="tabcontent" style="display: block;">
             <div class="control-section">
                 <input type="text" id="studentName" placeholder="اسم الطالب" onkeypress="if(event.key === 'Enter') addStudent()">
@@ -299,7 +386,7 @@
             <table id="dailyTable">
                 <thead>
                     <tr>
-                        <th style="width: 30px;">تحريك</th>
+                        <th style="width: 60px;">تحريك</th>
                         <th>الاسم</th>
                         <th>الصف</th>
                         <th>الفصل</th>
@@ -311,9 +398,11 @@
                 </thead>
                 <tbody id="tableBody"></tbody>
             </table>
+            <div id="noStudentsMessage" class="no-students-message" style="display: none;">
+                لا توجد أسماء تتطابق مع التصفية. حاول تغيير الصف أو الفصل.
+            </div>
         </div>
 
-        <!-- تبويب المشاركة والواجبات -->
         <div id="participation" class="tabcontent">
             <div class="filter-section">
                 <button class="filter-btn" onclick="updateParticipationTable()">تصفية</button>
@@ -326,6 +415,7 @@
                 <select id="filterParticipationSection" onchange="updateParticipationTable()">
                     <option value="">جميع الفصول</option>
                 </select>
+                <button class="export-btn" onclick="exportParticipationToExcel()">تصدير إلى Excel</button>
             </div>
             <table id="participationTable">
                 <thead>
@@ -341,7 +431,6 @@
             </table>
         </div>
 
-        <!-- تبويب جدول الإدخال -->
         <div id="inputTable" class="tabcontent">
             <div class="filter-section">
                 <button class="filter-btn" onclick="filterSavedTable()">تصفية حسب الصف</button>
@@ -361,6 +450,7 @@
                         <th>الفصل</th>
                         <th>السلوك</th>
                         <th>الدرجة</th>
+                        <th>اليوم</th>
                         <th>التاريخ</th>
                         <th>ملاحظات على الطالب</th>
                         <th>حذف</th>
@@ -370,7 +460,6 @@
             </table>
         </div>
 
-        <!-- تبويب الإحصائيات -->
         <div id="stats" class="tabcontent">
             <div class="control-section">
                 <select id="statsGrade" onchange="updateStatsSections(); updateStatsChart()">
@@ -386,21 +475,22 @@
             <canvas id="statsChart"></canvas>
         </div>
 
-        <!-- تبويب الكتب الدراسية -->
         <div id="books" class="tabcontent">
             <iframe id="booksIframe" src="https://ktby.net" title="الكتب الدراسية"></iframe>
         </div>
 
-        <!-- تبويب الإرسال -->
         <div id="send" class="tabcontent">
             <div class="control-section">
-                <select id="sendSection" onchange="updateStudentList()">
-                    <option value="">اختر الفصل</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
+                <select id="sendGrade" onchange="updateSendSections()">
+                    <option value="">اختر الصف</option>
+                    <option value="الأول متوسط">الأول متوسط</option>
+                    <option value="الثاني متوسط">الثاني متوسط</option>
+                    <option value="الثالث متوسط">الثالث متوسط</option>
                 </select>
-                <select id="sendStudent" onchange="displayStudentDetails()">
+                <select id="sendSection" onchange="updateFilteredStudentList()">
+                    <option value="">اختر الفصل</option>
+                </select>
+                <select id="filteredStudents" onchange="displayStudentDetails()">
                     <option value="">اختر الطالب</option>
                 </select>
             </div>
@@ -422,7 +512,6 @@
             </div>
         </div>
 
-        <!-- تبويب الفيديو والصور -->
         <div id="media" class="tabcontent">
             <div class="control-section">
                 <input type="file" id="mediaUpload" accept="image/*,video/*" multiple style="display: none;" onchange="handleFileUpload(event)">
@@ -430,10 +519,9 @@
                 <input type="text" id="mediaLink" placeholder="أدخل رابط الصورة أو الفيديو (مثل يوتيوب)">
                 <button class="add-link-btn" onclick="addMediaFromLink()">إضافة من رابط</button>
             </div>
-            <div id="mediaContainer"></div>
+            <div id="mediaContainer" class="media-container"></div>
         </div>
 
-        <!-- تبويب ملفات PDF -->
         <div id="pdf" class="tabcontent">
             <div class="control-section">
                 <input type="file" id="pdfUpload" accept="application/pdf" multiple style="display: none;" onchange="handlePDFUpload(event)">
@@ -444,10 +532,11 @@
             <div id="pdfContainer"></div>
         </div>
 
-        <!-- طبقة ملء الشاشة للصور -->
         <div id="fullscreenOverlay" class="fullscreen-overlay">
             <img id="fullscreenImage" src="" alt="صورة مكبرة">
             <button class="close-btn" onclick="closeFullscreen()">إغلاق</button>
+            <button class="nav-btn prev-btn" onclick="navigateImages(-1)">❮</button>
+            <button class="nav-btn next-btn" onclick="navigateImages(1)">❯</button>
         </div>
     </div>
 
@@ -460,10 +549,13 @@
         let statsChart = null;
         let currentTab = 'kashf';
         let historyStack = [];
+        let currentImageIndex = -1;
+        let imageSources = [];
 
         window.onload = function() {
             loadAllData();
-            setupDragAndDrop();
+            renderKashfTable();
+            openTab({ currentTarget: document.querySelector('.tablinks.kashf-tab') }, 'kashf');
         };
 
         function loadAllData() {
@@ -474,11 +566,8 @@
             loadPDFData();
         }
 
-        // دالة فتح التبويب (مع تصحيح الأخطاء)
         function openTab(evt, tabName) {
-            console.log("Opening tab:", tabName); // تصحيح الأخطاء
-
-            // إخفاء جميع التبويبات
+            console.log("Opening tab:", tabName);
             const tabcontent = document.getElementsByClassName("tabcontent");
             if (tabcontent.length === 0) {
                 console.error("No elements with class 'tabcontent' found.");
@@ -487,8 +576,6 @@
             for (let i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";
             }
-
-            // إزالة الـ active من جميع أزرار التبويبات
             const tablinks = document.getElementsByClassName("tablinks");
             if (tablinks.length === 0) {
                 console.error("No elements with class 'tablinks' found.");
@@ -497,38 +584,23 @@
             for (let i = 0; i < tablinks.length; i++) {
                 tablinks[i].classList.remove("active");
             }
-
-            // إظهار التبويب المحدد
-            const targetTab = document.getElementById(tabName);
-            if (targetTab) {
-                targetTab.style.display = "block";
-            } else {
-                console.error(`Tab with ID "${tabName}" not found.`);
-                return;
-            }
-
-            // إضافة الـ active للزر المضغوط
-            if (evt.currentTarget) {
-                evt.currentTarget.classList.add("active");
-            } else {
-                console.error("Event target is not defined.");
-                return;
-            }
-
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.classList.add("active");
             currentTab = tabName;
-
-            // تحديث المحتوى بناءً على التبويب
             try {
                 if (tabName === 'participation') {
                     updateParticipationTable();
                 } else if (tabName === 'stats') {
                     updateStatsChart();
                 } else if (tabName === 'send') {
-                    updateStudentList();
+                    updateSendSections();
+                    updateFilteredStudentList();
                 } else if (tabName === 'media') {
                     renderMediaItems();
                 } else if (tabName === 'pdf') {
                     renderPDFItems();
+                } else if (tabName === 'kashf') {
+                    renderKashfTable();
                 }
             } catch (error) {
                 console.error(`Error in tab "${tabName}":`, error);
@@ -554,8 +626,8 @@
             document.getElementById('studentName').value = '';
             saveKashfData();
             saveToHistory();
-            filterKashfTable();
-            updateStudentList();
+            updateSendSections();
+            updateFilteredStudentList();
             updateParticipationTable();
         }
 
@@ -581,8 +653,8 @@
             document.getElementById('multipleStudents').value = '';
             saveKashfData();
             saveToHistory();
-            filterKashfTable();
-            updateStudentList();
+            updateSendSections();
+            updateFilteredStudentList();
             updateParticipationTable();
         }
 
@@ -596,12 +668,17 @@
         function renderKashfTable() {
             const tableBody = document.getElementById('tableBody');
             tableBody.innerHTML = '';
+            const noStudentsMessage = document.getElementById('noStudentsMessage');
+            noStudentsMessage.style.display = 'none';
+
             students.forEach((student, index) => {
                 const row = document.createElement('tr');
-                row.setAttribute('draggable', 'true');
                 row.innerHTML = `
-                    <td class="drag-handle">☰</td>
-                    <td><input type="text" value="${student.name}" onchange="updateStudent(${index}, 'name', this.value)"></td>
+                    <td>
+                        <button class="move-btn" onclick="moveRowUp(${index})" ${index === 0 ? 'disabled' : ''}>↑</button>
+                        <button class="move-btn" onclick="moveRowDown(${index})" ${index === students.length - 1 ? 'disabled' : ''}>↓</button>
+                    </td>
+                    <td class="student-name"><input type="text" value="${student.name}" onchange="updateStudent(${index}, 'name', this.value)"></td>
                     <td>
                         <div class="checkbox-group">
                             <label><input type="checkbox" name="grade_${index}" value="الأول متوسط" ${student.grade === 'الأول متوسط' ? 'checked' : ''} onchange="updateStudent(${index}, 'grade', this)"> الأول متوسط</label>
@@ -617,14 +694,13 @@
                         </div>
                     </td>
                     <td>
-                        <select onchange="updateStudent(${index}, 'behavior', this)">
-                            <option value="" ${student.behavior === '' ? 'selected' : ''}>اختر السلوك</option>
-                            <option value="forgotBook" ${student.behavior === 'forgotBook' ? 'selected' : ''}>نسي الكتاب</option>
-                            <option value="talking" ${student.behavior === 'talking' ? 'selected' : ''}>يتحدث أثناء الدرس</option>
-                            <option value="sleeping" ${student.behavior === 'sleeping' ? 'selected' : ''}>نايم</option>
-                            <option value="late" ${student.behavior === 'late' ? 'selected' : ''}>متأخر</option>
-                            <option value="fighting" ${student.behavior === 'fighting' ? 'selected' : ''}>مشاجرة</option>
-                            <option value="undo">رجوع</option>
+                        <select onchange="updateBehavior(${index}, this.value)">
+                            <option value="">اختر السلوك</option>
+                            <option value="نسي الكتاب" ${student.behavior === 'نسي الكتاب' ? 'selected' : ''}>نسي الكتاب</option>
+                            <option value="التحدث أثناء الدرس" ${student.behavior === 'التحدث أثناء الدرس' ? 'selected' : ''}>التحدث أثناء الدرس</option>
+                            <option value="متأخر" ${student.behavior === 'متأخر' ? 'selected' : ''}>متأخر</option>
+                            <option value="نائم" ${student.behavior === 'نائم' ? 'selected' : ''}>نائم</option>
+                            <option value="رجوع" ${student.behavior === 'رجوع' ? 'selected' : ''}>رجوع</option>
                         </select>
                     </td>
                     <td><input type="number" value="${student.score}" min="0" max="20" onchange="updateStudent(${index}, 'score', this.value)"></td>
@@ -632,45 +708,74 @@
                     <td><button class="delete-btn" onclick="deleteStudent(${index})">حذف</button></td>
                 `;
                 tableBody.appendChild(row);
-                setupRowDragEvents(row);
             });
+
+            if (students.length === 0) {
+                noStudentsMessage.style.display = 'block';
+                noStudentsMessage.textContent = 'لا توجد أسماء لعرضها. أضف طلابًا جدد.';
+            }
+            updateKashfSections();
         }
 
-        function updateStudent(index, field, element) {
-            if (field === 'name') {
-                students[index].name = element.value.trim();
-                students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+        function moveRowUp(index) {
+            if (index > 0) {
+                [students[index], students[index - 1]] = [students[index - 1], students[index]];
                 renderKashfTable();
-            } else if (field === 'grade') {
-                const checkboxes = document.getElementsByName(`grade_${index}`);
-                checkboxes.forEach(cb => { if (cb !== element) cb.checked = false; });
-                students[index].grade = element.checked ? element.value : '';
-            } else if (field === 'section') {
-                const checkboxes = document.getElementsByName(`section_${index}`);
-                checkboxes.forEach(cb => { if (cb !== element) cb.checked = false; });
-                students[index].section = element.checked ? element.value : '';
-            } else if (field === 'behavior') {
-                const behavior = element.value;
-                students[index].behavior = behavior;
-                if (behavior === 'undo') {
-                    undoLastAction();
-                    return;
-                }
-                if (behavior && behavior !== '') {
-                    let score = parseInt(students[index].score);
-                    if (score > 0) {
-                        students[index].score = score - 2;
-                    }
-                    renderKashfTable();
-                }
-            } else if (field === 'score') {
-                students[index].score = parseInt(element.value);
+                saveKashfData();
+                saveToHistory();
             }
+        }
+
+        function moveRowDown(index) {
+            if (index < students.length - 1) {
+                [students[index], students[index + 1]] = [students[index + 1], students[index]];
+                renderKashfTable();
+                saveKashfData();
+                saveToHistory();
+            }
+        }
+
+        function updateStudent(index, field, value) {
+            if (field === 'grade' || field === 'section') {
+                const checkboxes = document.getElementsByName(`${field}_${index}`);
+                checkboxes.forEach(checkbox => {
+                    if (checkbox !== value) checkbox.checked = false;
+                });
+                students[index][field] = value.checked ? value.value : '';
+            } else {
+                students[index][field] = value;
+            }
+            students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+            renderKashfTable();
             saveKashfData();
             saveToHistory();
-            filterKashfTable();
-            updateStudentList();
+            updateSendSections();
+            updateFilteredStudentList();
             updateParticipationTable();
+        }
+
+        function updateBehavior(index, behavior) {
+            students[index].behavior = behavior;
+            if (behavior === 'رجوع') {
+                students[index].score = 20;
+            } else if (behavior && behavior !== '') {
+                students[index].score = Math.max(0, students[index].score - 2);
+            }
+            renderKashfTable();
+            saveKashfData();
+            saveToHistory();
+        }
+
+        function saveStudent(index) {
+            const student = { ...students[index] };
+            const today = new Date();
+            student.date = today.toLocaleDateString('ar-EG');
+            student.day = today.toLocaleDateString('ar-EG', { weekday: 'long' });
+            savedStudents.push(student);
+            savedStudents.sort((a, b) => new Date(b.date) - new Date(a.date));
+            renderSavedTable();
+            saveSavedData();
+            saveToHistory();
         }
 
         function deleteStudent(index) {
@@ -678,205 +783,630 @@
             renderKashfTable();
             saveKashfData();
             saveToHistory();
-            filterKashfTable();
-            updateStudentList();
+            updateSendSections();
+            updateFilteredStudentList();
             updateParticipationTable();
         }
 
         function deleteAllKashfRows() {
             students = [];
             renderKashfTable();
-            localStorage.removeItem('kashfData');
-            historyStack = [];
-            filterKashfTable();
-            updateStudentList();
-            participationData = {};
-            localStorage.removeItem('participationData');
+            saveKashfData();
+            saveToHistory();
+            updateSendSections();
+            updateFilteredStudentList();
             updateParticipationTable();
-        }
-
-        function saveKashfData() {
-            localStorage.setItem('kashfData', JSON.stringify(students));
-        }
-
-        function loadKashfData() {
-            const data = localStorage.getItem('kashfData');
-            if (data) {
-                students = JSON.parse(data);
-                renderKashfTable();
-                filterKashfTable();
-                updateStudentList();
-                updateParticipationTable();
-            }
         }
 
         function updateKashfSections() {
-            const filterGrade = document.getElementById('filterKashfGrade').value;
-            const filterSection = document.getElementById('filterKashfSection');
-            filterSection.innerHTML = '<option value="">جميع الفصول</option>';
-            if (filterGrade) {
-                filterSection.innerHTML += '<option value="1">1</option><option value="2">2</option>';
-                if (filterGrade === 'الثالث متوسط') {
-                    filterSection.innerHTML += '<option value="3">3</option>';
-                }
-            }
-            filterKashfTable();
+            const gradeFilter = document.getElementById('filterKashfGrade').value;
+            const sections = [...new Set(students.filter(s => !gradeFilter || s.grade === gradeFilter).map(s => s.section).filter(s => s))];
+            const sectionSelect = document.getElementById('filterKashfSection');
+            sectionSelect.innerHTML = '<option value="">جميع الفصول</option>';
+            sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section;
+                option.textContent = section;
+                sectionSelect.appendChild(option);
+            });
         }
 
         function filterKashfTable() {
-            const filterGrade = document.getElementById('filterKashfGrade').value;
-            const filterSection = document.getElementById('filterKashfSection').value;
-            const rows = document.getElementById('tableBody').getElementsByTagName('tr');
-            for (let i = 0; i < rows.length; i++) {
-                const student = students[i];
-                const matchGrade = !filterGrade || student.grade === filterGrade;
-                const matchSection = !filterSection || student.section === filterSection;
-                rows[i].style.display = (matchGrade && matchSection) ? '' : 'none';
-            }
-        }
-
-        function saveToHistory() {
+            const gradeFilter = document.getElementById('filterKashfGrade').value;
+            const sectionFilter = document.getElementById('filterKashfSection').value;
+            const filteredStudents = students.filter(student => 
+                (!gradeFilter || student.grade === gradeFilter) &&
+                (!sectionFilter || student.section === sectionFilter)
+            );
             const tableBody = document.getElementById('tableBody');
-            const rows = Array.from(tableBody.getElementsByTagName('tr'));
-            const currentState = rows.map(row => row.innerHTML);
-            historyStack.push(currentState);
-        }
+            tableBody.innerHTML = '';
+            const noStudentsMessage = document.getElementById('noStudentsMessage');
+            noStudentsMessage.style.display = 'none';
 
-        function undoLastAction() {
-            if (historyStack.length > 1) {
-                historyStack.pop();
-                const previousState = historyStack[historyStack.length - 1];
-                const tableBody = document.getElementById('tableBody');
-                tableBody.innerHTML = previousState.join('');
-                students = [];
-                Array.from(tableBody.getElementsByTagName('tr')).forEach((row, index) => {
-                    const name = row.querySelector('input[type="text"]').value;
-                    const grade = Array.from(row.querySelectorAll(`[name="grade_${index}"]`)).find(cb => cb.checked)?.value || '';
-                    const section = Array.from(row.querySelectorAll(`[name="section_${index}"]`)).find(cb => cb.checked)?.value || '';
-                    const behavior = row.querySelector('select').value;
-                    const score = parseInt(row.querySelector('input[type="number"]').value);
-                    students.push({ name, grade, section, behavior, score });
-                });
-                setupDragAndDrop();
-                saveKashfData();
-                filterKashfTable();
-                updateStudentList();
-                updateParticipationTable();
+            filteredStudents.forEach((student, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <button class="move-btn" onclick="moveRowUp(${students.indexOf(student)})" ${students.indexOf(student) === 0 ? 'disabled' : ''}>↑</button>
+                        <button class="move-btn" onclick="moveRowDown(${students.indexOf(student)})" ${students.indexOf(student) === students.length - 1 ? 'disabled' : ''}>↓</button>
+                    </td>
+                    <td class="student-name"><input type="text" value="${student.name}" onchange="updateStudent(${students.indexOf(student)}, 'name', this.value)"></td>
+                    <td>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="grade_${index}" value="الأول متوسط" ${student.grade === 'الأول متوسط' ? 'checked' : ''} onchange="updateStudent(${students.indexOf(student)}, 'grade', this)"> الأول متوسط</label>
+                            <label><input type="checkbox" name="grade_${index}" value="الثاني متوسط" ${student.grade === 'الثاني متوسط' ? 'checked' : ''} onchange="updateStudent(${students.indexOf(student)}, 'grade', this)"> الثاني متوسط</label>
+                            <label><input type="checkbox" name="grade_${index}" value="الثالث متوسط" ${student.grade === 'الثالث متوسط' ? 'checked' : ''} onchange="updateStudent(${students.indexOf(student)}, 'grade', this)"> الثالث متوسط</label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" name="section_${index}" value="1" ${student.section === '1' ? 'checked' : ''} onchange="updateStudent(${students.indexOf(student)}, 'section', this)"> 1</label>
+                            <label><input type="checkbox" name="section_${index}" value="2" ${student.section === '2' ? 'checked' : ''} onchange="updateStudent(${students.indexOf(student)}, 'section', this)"> 2</label>
+                            <label><input type="checkbox" name="section_${index}" value="3" ${student.section === '3' ? 'checked' : ''} onchange="updateStudent(${students.indexOf(student)}, 'section', this)"> 3</label>
+                        </div>
+                    </td>
+                    <td>
+                        <select onchange="updateBehavior(${students.indexOf(student)}, this.value)">
+                            <option value="">اختر السلوك</option>
+                            <option value="نسي الكتاب" ${student.behavior === 'نسي الكتاب' ? 'selected' : ''}>نسي الكتاب</option>
+                            <option value="التحدث أثناء الدرس" ${student.behavior === 'التحدث أثناء الدرس' ? 'selected' : ''}>التحدث أثناء الدرس</option>
+                            <option value="متأخر" ${student.behavior === 'متأخر' ? 'selected' : ''}>متأخر</option>
+                            <option value="نائم" ${student.behavior === 'نائم' ? 'selected' : ''}>نائم</option>
+                            <option value="رجوع" ${student.behavior === 'رجوع' ? 'selected' : ''}>رجوع</option>
+                        </select>
+                    </td>
+                    <td><input type="number" value="${student.score}" min="0" max="20" onchange="updateStudent(${students.indexOf(student)}, 'score', this.value)"></td>
+                    <td><button class="save-btn" onclick="saveStudent(${students.indexOf(student)})">حفظ</button></td>
+                    <td><button class="delete-btn" onclick="deleteStudent(${students.indexOf(student)})">حذف</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            if (filteredStudents.length === 0 && (gradeFilter || sectionFilter)) {
+                noStudentsMessage.style.display = 'block';
+                noStudentsMessage.textContent = 'لا توجد أسماء تتطابق مع التصفية. حاول تغيير الصف أو الفصل.';
             }
         }
 
-        function updateParticipationSections() {
-            const filterGrade = document.getElementById('filterParticipationGrade').value;
-            const filterSection = document.getElementById('filterParticipationSection');
-            filterSection.innerHTML = '<option value="">جميع الفصول</option>';
-            if (filterGrade) {
-                filterSection.innerHTML += '<option value="1">1</option><option value="2">2</option>';
-                if (filterGrade === 'الثالث متوسط') {
-                    filterSection.innerHTML += '<option value="3">3</option>';
-                }
-            }
-            updateParticipationTable();
+        function renderSavedTable() {
+            const tableBody = document.getElementById('savedTableBody');
+            tableBody.innerHTML = '';
+            savedStudents.forEach((student, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${student.name}</td>
+                    <td>${student.grade}</td>
+                    <td>${student.section}</td>
+                    <td>${student.behavior}</td>
+                    <td>${student.score}</td>
+                    <td>${student.day}</td>
+                    <td>${student.date}</td>
+                    <td><input type="text" value="${student.notes || ''}" onchange="updateSavedStudentNotes(${index}, this.value)"></td>
+                    <td><button class="delete-btn" onclick="deleteSavedStudent(${index})">حذف</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function updateSavedStudentNotes(index, notes) {
+            savedStudents[index].notes = notes;
+            saveSavedData();
+            saveToHistory();
+        }
+
+        function deleteSavedStudent(index) {
+            savedStudents.splice(index, 1);
+            renderSavedTable();
+            saveSavedData();
+            saveToHistory();
+        }
+
+        function filterSavedTable() {
+            const gradeFilter = document.getElementById('filterGrade').value;
+            const filteredStudents = savedStudents.filter(student => !gradeFilter || student.grade === gradeFilter);
+            const tableBody = document.getElementById('savedTableBody');
+            tableBody.innerHTML = '';
+            filteredStudents.forEach((student, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${student.name}</td>
+                    <td>${student.grade}</td>
+                    <td>${student.section}</td>
+                    <td>${student.behavior}</td>
+                    <td>${student.score}</td>
+                    <td>${student.day}</td>
+                    <td>${student.date}</td>
+                    <td><input type="text" value="${student.notes || ''}" onchange="updateSavedStudentNotes(${savedStudents.indexOf(student)}, this.value)"></td>
+                    <td><button class="delete-btn" onclick="deleteSavedStudent(${savedStudents.indexOf(student)})">حذف</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function exportToExcel() {
+            const table = document.getElementById('savedTable');
+            const ws = XLSX.utils.table_to_sheet(table);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'كشف المتابعة');
+            XLSX.writeFile(wb, 'كشف_المتابعة.xlsx');
+        }
+
+        function exportParticipationToExcel() {
+            const table = document.getElementById('participationTable');
+            const ws = XLSX.utils.table_to_sheet(table);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'المشاركة والواجبات');
+            XLSX.writeFile(wb, 'المشاركة_والواجبات.xlsx');
         }
 
         function updateParticipationTable() {
-            const filterGrade = document.getElementById('filterParticipationGrade').value;
-            const filterSection = document.getElementById('filterParticipationSection').value;
-            const participationTableBody = document.getElementById('participationTableBody');
-            participationTableBody.innerHTML = '';
-
-            let filteredStudents = students.filter(student => {
-                const matchGrade = !filterGrade || student.grade === filterGrade;
-                const matchSection = !filterSection || student.section === filterSection;
-                return matchGrade && matchSection && student.name.trim();
-            });
-
-            filteredStudents.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
-
-            if (filteredStudents.length === 0) {
-                participationTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">لا توجد أسماء طلاب لعرضها</td></tr>';
-                return;
-            }
-
+            const gradeFilter = document.getElementById('filterParticipationGrade').value;
+            const sectionFilter = document.getElementById('filterParticipationSection').value;
+            const filteredStudents = students.filter(student => 
+                (!gradeFilter || student.grade === gradeFilter) &&
+                (!sectionFilter || student.section === sectionFilter)
+            );
+            const tableBody = document.getElementById('participationTableBody');
+            tableBody.innerHTML = '';
             filteredStudents.forEach(student => {
-                const name = student.name;
-                const studentData = participationData[name] || {
-                    participationChecks: Array(6).fill(false),
-                    participationScore: 10,
-                    homeworkChecks: Array(6).fill(false),
-                    homeworkScore: 10
-                };
+                const studentKey = `${student.name}_${student.grade}_${student.section}`;
+                if (!participationData[studentKey]) {
+                    participationData[studentKey] = { participation: 0, homework: 0, participationScore: 10, homeworkScore: 10 };
+                }
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${name}</td>
+                    <td>${student.name}</td>
                     <td>
-                        <div class="checkbox-container">
-                            ${createCheckbox(name, 'participation', 0, studentData.participationChecks[0])}
-                            ${createCheckbox(name, 'participation', 1, studentData.participationChecks[1])}
-                            ${createCheckbox(name, 'participation', 2, studentData.participationChecks[2])}
-                            ${createCheckbox(name, 'participation', 3, studentData.participationChecks[3])}
-                            ${createCheckbox(name, 'participation', 4, studentData.participationChecks[4])}
-                            ${createCheckbox(name, 'participation', 5, studentData.participationChecks[5])}
+                        <div class="checkbox-group">
+                            ${Array(5).fill().map((_, i) => `
+                                <label class="checkbox-label ${participationData[studentKey].participation > i ? 'checked' : ''}">
+                                    <input type="checkbox" ${participationData[studentKey].participation > i ? 'checked' : ''} onchange="updateParticipation('${studentKey}', 'participation', ${i + 1}, this.checked)">
+                                </label>
+                            `).join('')}
                         </div>
                     </td>
-                    <td><span class="participation-score">${studentData.participationScore}</span></td>
+                    <td><input type="number" value="${participationData[studentKey].participationScore}" min="0" max="10" onchange="updateParticipationScore('${studentKey}', 'participationScore', this.value)"></td>
                     <td>
-                        <div class="checkbox-container">
-                            ${createCheckbox(name, 'homework', 0, studentData.homeworkChecks[0])}
-                            ${createCheckbox(name, 'homework', 1, studentData.homeworkChecks[1])}
-                            ${createCheckbox(name, 'homework', 2, studentData.homeworkChecks[2])}
-                            ${createCheckbox(name, 'homework', 3, studentData.homeworkChecks[3])}
-                            ${createCheckbox(name, 'homework', 4, studentData.homeworkChecks[4])}
-                            ${createCheckbox(name, 'homework', 5, studentData.homeworkChecks[5])}
+                        <div class="checkbox-group">
+                            ${Array(5).fill().map((_, i) => `
+                                <label class="checkbox-label ${participationData[studentKey].homework > i ? 'checked' : ''}">
+                                    <input type="checkbox" ${participationData[studentKey].homework > i ? 'checked' : ''} onchange="updateParticipation('${studentKey}', 'homework', ${i + 1}, this.checked)">
+                                </label>
+                            `).join('')}
                         </div>
                     </td>
-                    <td><span class="homework-score">${studentData.homeworkScore}</span></td>
+                    <td><input type="number" value="${participationData[studentKey].homeworkScore}" min="0" max="10" onchange="updateParticipationScore('${studentKey}', 'homeworkScore', this.value)"></td>
                 `;
-                participationTableBody.appendChild(row);
+                tableBody.appendChild(row);
             });
             saveParticipationData();
         }
 
-        function createCheckbox(studentName, type, index, isChecked) {
-            return `
-                <label class="checkbox-label ${isChecked ? 'checked' : ''}">
-                    <input type="checkbox" name="${type}_${studentName}_${index}" ${isChecked ? 'checked' : ''} onchange="updateScoreForCheckbox(this, '${studentName}', '${type}', ${index})">
-                </label>
-            `;
+        function updateParticipation(studentKey, field, value, checked) {
+            const currentCount = participationData[studentKey][field];
+            participationData[studentKey][field] = checked ? value : Math.max(0, value - 1);
+            const scoreField = field === 'participation' ? 'participationScore' : 'homeworkScore';
+            if (checked && participationData[studentKey][field] > currentCount) {
+                participationData[studentKey][scoreField] = Math.max(0, participationData[studentKey][scoreField] - 1);
+            } else if (!checked && participationData[studentKey][field] < currentCount) {
+                participationData[studentKey][scoreField] = Math.min(10, participationData[studentKey][scoreField] + 1);
+            }
+            updateParticipationTable();
+            saveParticipationData();
+            saveToHistory();
         }
 
-        function updateScoreForCheckbox(checkbox, studentName, type, index) {
-            const label = checkbox.parentElement;
-            const isChecked = checkbox.checked;
-            label.classList.toggle('checked', isChecked);
-
-            const row = checkbox.closest('tr');
-            const scoreElement = type === 'participation' ? row.querySelector('.participation-score') : row.querySelector('.homework-score');
-            let score = parseInt(scoreElement.textContent);
-
-            if (isChecked) {
-                score = Math.max(0, score - 1);
-            } else {
-                score = Math.min(10, score + 1);
-            }
-
-            scoreElement.textContent = score;
-
-            if (!participationData[studentName]) {
-                participationData[studentName] = {
-                    participationChecks: Array(6).fill(false),
-                    participationScore: 10,
-                    homeworkChecks: Array(6).fill(false),
-                    homeworkScore: 10
-                };
-            }
-            if (type === 'participation') {
-                participationData[studentName].participationChecks[index] = isChecked;
-                participationData[studentName].participationScore = score;
-            } else {
-                participationData[studentName].homeworkChecks[index] = isChecked;
-                participationData[studentName].homeworkScore = score;
-            }
+        function updateParticipationScore(studentKey, field, value) {
+            participationData[studentKey][field] = parseInt(value) || 0;
+            updateParticipationTable();
             saveParticipationData();
+            saveToHistory();
+        }
+
+        function updateParticipationSections() {
+            const gradeFilter = document.getElementById('filterParticipationGrade').value;
+            const sections = [...new Set(students.filter(s => !gradeFilter || s.grade === gradeFilter).map(s => s.section).filter(s => s))];
+            const sectionSelect = document.getElementById('filterParticipationSection');
+            sectionSelect.innerHTML = '<option value="">جميع الفصول</option>';
+            sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section;
+                option.textContent = section;
+                sectionSelect.appendChild(option);
+            });
+            updateParticipationTable();
+        }
+
+        function updateStatsChart() {
+            const grade = document.getElementById('statsGrade').value;
+            const section = document.getElementById('statsSection').value;
+            const filteredStudents = savedStudents.filter(student => 
+                (!grade || student.grade === grade) &&
+                (!section || student.section === section)
+            );
+            const behaviorCounts = { 'نسي الكتاب': 0, 'التحدث أثناء الدرس': 0, 'متأخر': 0, 'نائم': 0, 'رجوع': 0 };
+            filteredStudents.forEach(student => {
+                if (student.behavior && behaviorCounts.hasOwnProperty(student.behavior)) {
+                    behaviorCounts[student.behavior]++;
+                }
+            });
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            if (statsChart) statsChart.destroy();
+            statsChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(behaviorCounts),
+                    datasets: [{
+                        label: 'عدد المخالفات',
+                        data: Object.values(behaviorCounts),
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
+                        borderColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'إحصائيات السلوك'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStatsSections() {
+            const grade = document.getElementById('statsGrade').value;
+            const sections = [...new Set(savedStudents.filter(s => !grade || s.grade === grade).map(s => s.section).filter(s => s))];
+            const sectionSelect = document.getElementById('statsSection');
+            sectionSelect.innerHTML = '<option value="">اختر الفصل</option>';
+            sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section;
+                option.textContent = section;
+                sectionSelect.appendChild(option);
+            });
+        }
+
+        function updateSendSections() {
+            const grade = document.getElementById('sendGrade').value;
+            const sections = [...new Set(students.filter(s => !grade || s.grade === grade).map(s => s.section).filter(s => s))];
+            const sectionSelect = document.getElementById('sendSection');
+            sectionSelect.innerHTML = '<option value="">اختر الفصل</option>';
+            sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section;
+                option.textContent = section;
+                sectionSelect.appendChild(option);
+            });
+            updateFilteredStudentList();
+        }
+
+        function updateFilteredStudentList() {
+            const grade = document.getElementById('sendGrade').value;
+            const section = document.getElementById('sendSection').value;
+            const filteredStudents = students.filter(student => 
+                (!grade || student.grade === grade) &&
+                (!section || student.section === section)
+            );
+            const studentSelect = document.getElementById('filteredStudents');
+            studentSelect.innerHTML = '<option value="">اختر الطالب</option>';
+            filteredStudents.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student.name;
+                option.textContent = student.name;
+                studentSelect.appendChild(option);
+            });
+        }
+
+        function displayStudentDetails() {
+            const studentName = document.getElementById('filteredStudents').value;
+            if (!studentName) {
+                document.getElementById('studentDetailsTable').style.display = 'none';
+                document.getElementById('whatsappButton').style.display = 'none';
+                return;
+            }
+            const studentRecords = savedStudents.filter(s => s.name === studentName);
+            const tableBody = document.getElementById('studentDetailsBody');
+            tableBody.innerHTML = '';
+            studentRecords.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.name}</td>
+                    <td>${record.grade}</td>
+                    <td>${record.section}</td>
+                    <td>${record.behavior}</td>
+                    <td>${record.score}</td>
+                    <td>${record.notes}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            document.getElementById('studentDetailsTable').style.display = 'table';
+            document.getElementById('whatsappButton').style.display = 'block';
+        }
+
+        function sendToWhatsApp() {
+            const studentName = document.getElementById('filteredStudents').value;
+            const studentRecords = savedStudents.filter(s => s.name === studentName);
+            let message = `تقرير الطالب: ${studentName}\n\n`;
+            studentRecords.forEach(record => {
+                message += `التاريخ: ${record.date}\n`;
+                message += `الصف: ${record.grade}\n`;
+                message += `الفصل: ${record.section}\n`;
+                message += `السلوك: ${record.behavior}\n`;
+                message += `الدرجة: ${record.score}\n`;
+                message += `ملاحظات: ${record.notes}\n\n`;
+            });
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const mediaItem = {
+                        src: e.target.result,
+                        type: file.type.startsWith('image') ? 'image' : 'video',
+                        description: ''
+                    };
+                    mediaItems.push(mediaItem);
+                    renderMediaItems();
+                    saveMediaData();
+                    saveToHistory();
+                };
+                reader.readAsDataURL(file);
+            }
+            document.getElementById('mediaUpload').value = '';
+        }
+
+        function addMediaFromLink() {
+            const link = document.getElementById('mediaLink').value.trim();
+            if (!link) {
+                alert('يرجى إدخال رابط الصورة أو الفيديو');
+                return;
+            }
+            const mediaItem = {
+                src: link,
+                type: link.includes('youtube.com') || link.includes('youtu.be') ? 'youtube' : 'image',
+                description: ''
+            };
+            mediaItems.push(mediaItem);
+            renderMediaItems();
+            document.getElementById('mediaLink').value = '';
+            saveMediaData();
+            saveToHistory();
+        }
+
+        function renderMediaItems() {
+            const container = document.getElementById('mediaContainer');
+            container.innerHTML = '';
+            const images = mediaItems.filter(item => item.type === 'image');
+            const videos = mediaItems.filter(item => item.type !== 'image');
+
+            if (images.length > 0) {
+                const slideContainer = document.createElement('div');
+                slideContainer.className = 'media-slide-container';
+                images.forEach((item, index) => {
+                    const slide = document.createElement('div');
+                    slide.className = `media-slide ${index === 0 ? 'active' : ''}`;
+                    slide.innerHTML = `
+                        <img src="${item.src}" onclick="openFullscreen(${index})">
+                        <textarea placeholder="أدخل وصفًا للصورة" onchange="updateMediaDescription(${mediaItems.indexOf(item)}, this.value)">${item.description}</textarea>
+                    `;
+                    slideContainer.appendChild(slide);
+                });
+
+                if (images.length > 1) {
+                    const controls = document.createElement('div');
+                    controls.className = 'media-slide-controls';
+                    controls.innerHTML = `
+                        <button class="nav-btn" onclick="changeSlide(-1)">❮</button>
+                        <button class="delete-btn" onclick="deleteMediaItem(${mediaItems.indexOf(images[0])})">حذف</button>
+                        <button class="nav-btn" onclick="changeSlide(1)">❯</button>
+                    `;
+                    slideContainer.appendChild(controls);
+                } else {
+                    const controls = document.createElement('div');
+                    controls.className = 'media-slide-controls';
+                    controls.innerHTML = `
+                        <button class="delete-btn" onclick="deleteMediaItem(${mediaItems.indexOf(images[0])})">حذف</button>
+                    `;
+                    slideContainer.appendChild(controls);
+                }
+
+                container.appendChild(slideContainer);
+            }
+
+            videos.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'media-item video-item';
+                let mediaElement = '';
+                if (item.type === 'video') {
+                    mediaElement = `<video src="${item.src}" controls></video>`;
+                } else if (item.type === 'youtube') {
+                    const videoId = item.src.includes('youtu.be') ? item.src.split('/').pop() : new URLSearchParams(new URL(item.src).search).get('v');
+                    mediaElement = `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+                }
+                div.innerHTML = `
+                    ${mediaElement}
+                    <textarea placeholder="أدخل وصفًا للفيديو" onchange="updateMediaDescription(${mediaItems.indexOf(item)}, this.value)">${item.description}</textarea>
+                    <button class="delete-btn" onclick="deleteMediaItem(${mediaItems.indexOf(item)})">حذف</button>
+                `;
+                container.appendChild(div);
+            });
+
+            imageSources = images.map(item => item.src);
+        }
+
+        function changeSlide(direction) {
+            const slides = document.querySelectorAll('.media-slide');
+            let currentIndex = Array.from(slides).findIndex(slide => slide.classList.contains('active'));
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + direction + slides.length) % slides.length;
+            slides[currentIndex].classList.add('active');
+
+            const deleteBtn = document.querySelector('.media-slide-controls .delete-btn');
+            deleteBtn.setAttribute('onclick', `deleteMediaItem(${mediaItems.indexOf(mediaItems.filter(item => item.type === 'image')[currentIndex])})`);
+        }
+
+        function updateMediaDescription(index, description) {
+            mediaItems[index].description = description;
+            saveMediaData();
+            saveToHistory();
+        }
+
+        function deleteMediaItem(index) {
+            if (confirm('هل أنت متأكد من حذف هذا العنصر؟')) {
+                mediaItems.splice(index, 1);
+                renderMediaItems();
+                saveMediaData();
+                saveToHistory();
+            }
+        }
+
+        function openFullscreen(index) {
+            currentImageIndex = index;
+            const overlay = document.getElementById('fullscreenOverlay');
+            const img = document.getElementById('fullscreenImage');
+            img.src = imageSources[currentImageIndex];
+            overlay.style.display = 'flex';
+            updateNavigationButtons();
+        }
+
+        function closeFullscreen() {
+            const overlay = document.getElementById('fullscreenOverlay');
+            overlay.style.display = 'none';
+            currentImageIndex = -1;
+        }
+
+        function navigateImages(direction) {
+            currentImageIndex = (currentImageIndex + direction + imageSources.length) % imageSources.length;
+            const img = document.getElementById('fullscreenImage');
+            img.src = imageSources[currentImageIndex];
+            updateNavigationButtons();
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.querySelector('.prev-btn');
+            const nextBtn = document.querySelector('.next-btn');
+            if (imageSources.length <= 1) {
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+            } else {
+                prevBtn.style.display = 'block';
+                nextBtn.style.display = 'block';
+            }
+        }
+
+        function handlePDFUpload(event) {
+            const files = event.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const pdfItem = {
+                        src: e.target.result,
+                        description: ''
+                    };
+                    pdfItems.push(pdfItem);
+                    renderPDFItems();
+                    savePDFData();
+                    saveToHistory();
+                };
+                reader.readAsDataURL(file);
+            }
+            document.getElementById('pdfUpload').value = '';
+        }
+
+        function addPDFFromLink() {
+            const link = document.getElementById('pdfLink').value.trim();
+            if (!link) {
+                alert('يرجى إدخال رابط ملف PDF');
+                return;
+            }
+            const pdfItem = {
+                src: link,
+                description: ''
+            };
+            pdfItems.push(pdfItem);
+            renderPDFItems();
+            document.getElementById('pdfLink').value = '';
+            savePDFData();
+            saveToHistory();
+        }
+
+        function renderPDFItems() {
+            const container = document.getElementById('pdfContainer');
+            container.innerHTML = '';
+            pdfItems.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'pdf-item';
+                div.setAttribute('draggable', 'true');
+                div.innerHTML = `
+                    <embed src="${item.src}" type="application/pdf">
+                    <button class="open-btn" onclick="openPDFInNewTab('${item.src}')">فتح في صفحة جديدة</button>
+                    <textarea placeholder="أدخل وصفًا للملف" onchange="updatePDFDescription(${index}, this.value)">${item.description}</textarea>
+                    <button class="delete-btn" onclick="deletePDFItem(${index})">حذف</button>
+                `;
+                container.appendChild(div);
+            });
+            setupPDFDragAndDrop();
+        }
+
+        function openPDFInNewTab(src) {
+            try {
+                window.open(src, '_blank');
+            } catch (error) {
+                console.error('خطأ في فتح ملف PDF:', error);
+                alert('حدث خطأ أثناء فتح ملف PDF. يرجى التأكد من أن الرابط صحيح أو أن الملف متاح.');
+            }
+        }
+
+        function updatePDFDescription(index, description) {
+            pdfItems[index].description = description;
+            savePDFData();
+            saveToHistory();
+        }
+
+        function deletePDFItem(index) {
+            if (confirm('هل أنت متأكد من حذف هذا الملف؟')) {
+                pdfItems.splice(index, 1);
+                renderPDFItems();
+                savePDFData();
+                saveToHistory();
+            }
+        }
+
+        function saveKashfData() {
+            localStorage.setItem('students', JSON.stringify(students));
+        }
+
+        function loadKashfData() {
+            const data = localStorage.getItem('students');
+            if (data) {
+                students = JSON.parse(data);
+                renderKashfTable();
+            }
+        }
+
+        function saveSavedData() {
+            localStorage.setItem('savedStudents', JSON.stringify(savedStudents));
+        }
+
+        function loadSavedData() {
+            const data = localStorage.getItem('savedStudents');
+            if (data) {
+                savedStudents = JSON.parse(data);
+                renderSavedTable();
+            }
         }
 
         function saveParticipationData() {
@@ -887,644 +1417,87 @@
             const data = localStorage.getItem('participationData');
             if (data) {
                 participationData = JSON.parse(data);
+                updateParticipationTable();
             }
-            updateParticipationTable();
-        }
-
-        function saveStudent(index) {
-            const student = students[index];
-            if (!student.grade) {
-                alert('يرجى اختيار الصف للطالب: ' + student.name);
-                return;
-            }
-            if (!student.section) {
-                alert('يرجى اختيار الفصل للطالب: ' + student.name);
-                return;
-            }
-            if (!student.behavior || student.behavior === '') {
-                alert('يرجى اختيار السلوك للطالب: ' + student.name);
-                return;
-            }
-
-            const now = new Date();
-            const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-            const day = dayNames[now.getDay()];
-            const dateTime = `${day} - ${now.toLocaleDateString('ar-SA')} ${now.toLocaleTimeString('ar-SA')}`;
-
-            const existingStudent = savedStudents.find(s => s.name === student.name);
-            if (existingStudent) {
-                existingStudent.behaviors.push(getBehaviorText(student.behavior));
-                existingStudent.dates.push(dateTime);
-                existingStudent.score = Math.max(0, existingStudent.score - 2);
-            } else {
-                savedStudents.push({
-                    name: student.name,
-                    grade: student.grade,
-                    section: student.section,
-                    behaviors: [getBehaviorText(student.behavior)],
-                    score: student.score,
-                    dates: [dateTime],
-                    notes: ''
-                });
-            }
-            renderSavedTable();
-            saveSavedData();
-            if (currentTab === 'stats') {
-                updateStatsChart();
-            }
-            displayStudentDetails();
-        }
-
-        function getBehaviorText(behavior) {
-            switch (behavior) {
-                case 'forgotBook': return 'نسي الكتاب';
-                case 'talking': return 'يتحدث أثناء الدرس';
-                case 'sleeping': return 'نايم';
-                case 'late': return 'متأخر';
-                case 'fighting': return 'مشاجرة';
-                default: return '';
-            }
-        }
-
-        function renderSavedTable() {
-            const savedTableBody = document.getElementById('savedTableBody');
-            savedTableBody.innerHTML = '';
-            savedStudents.forEach((student, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${student.name}</td>
-                    <td>${student.grade}</td>
-                    <td>${student.section}</td>
-                    <td>${student.behaviors.join('<br>')}</td>
-                    <td>${student.score}</td>
-                    <td>${student.dates.join('<br>')}</td>
-                    <td><input type="text" class="notes-input" value="${student.notes}" onchange="updateSavedStudent(${index}, this.value)"></td>
-                    <td><button class="delete-btn" onclick="deleteSavedStudent(${index})">حذف</button></td>
-                `;
-                savedTableBody.appendChild(row);
-            });
-        }
-
-        function updateSavedStudent(index, notes) {
-            savedStudents[index].notes = notes;
-            saveSavedData();
-            displayStudentDetails();
-        }
-
-        function deleteSavedStudent(index) {
-            savedStudents.splice(index, 1);
-            renderSavedTable();
-            saveSavedData();
-            if (currentTab === 'stats') {
-                updateStatsChart();
-            }
-            displayStudentDetails();
-        }
-
-        function saveSavedData() {
-            localStorage.setItem('savedData', JSON.stringify(savedStudents));
-        }
-
-        function loadSavedData() {
-            const data = localStorage.getItem('savedData');
-            if (data) {
-                savedStudents = JSON.parse(data);
-                renderSavedTable();
-            }
-        }
-
-        function filterSavedTable() {
-            const filterGrade = document.getElementById('filterGrade').value;
-            const rows = document.getElementById('savedTableBody').getElementsByTagName('tr');
-            for (let i = 0; i < rows.length; i++) {
-                const grade = savedStudents[i].grade;
-                rows[i].style.display = (!filterGrade || grade === filterGrade) ? '' : 'none';
-            }
-            if (currentTab === 'stats') {
-                updateStatsChart();
-            }
-        }
-
-        function exportToExcel() {
-            const rows = document.getElementById('savedTable').getElementsByTagName('tr');
-            const data = [];
-            const headers = ['الاسم', 'الصف', 'الفصل', 'السلوك', 'الدرجة', 'التاريخ', 'ملاحظات على الطالب'];
-            data.push(headers);
-
-            for (let i = 0; i < savedStudents.length; i++) {
-                if (rows[i + 1].style.display === 'none') continue;
-                const student = savedStudents[i];
-                data.push([
-                    student.name,
-                    student.grade,
-                    student.section,
-                    student.behaviors.join('\n'),
-                    student.score,
-                    student.dates.join('\n'),
-                    student.notes
-                ]);
-            }
-
-            if (data.length <= 1) {
-                alert('لا توجد بيانات لتصديرها!');
-                return;
-            }
-
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "جدول الإدخال");
-            XLSX.writeFile(wb, "جدول_الإدخال.xlsx");
-        }
-
-        function updateStatsSections() {
-            const statsGrade = document.getElementById('statsGrade').value;
-            const statsSection = document.getElementById('statsSection');
-            statsSection.innerHTML = '<option value="">اختر الفصل</option>';
-            if (statsGrade) {
-                statsSection.innerHTML += '<option value="1">1</option><option value="2">2</option>';
-                if (statsGrade === 'الثالث متوسط') {
-                    statsSection.innerHTML += '<option value="3">3</option>';
-                }
-            }
-        }
-
-        function updateStatsChart() {
-            const selectedGrade = document.getElementById('statsGrade').value;
-            const selectedSection = document.getElementById('statsSection').value;
-
-            const behaviorCounts = {
-                "نسي الكتاب": 0,
-                "يتحدث أثناء الدرس": 0,
-                "نايم": 0,
-                "متأخر": 0,
-                "مشاجرة": 0
-            };
-
-            savedStudents.forEach(student => {
-                const matchGrade = !selectedGrade || student.grade === selectedGrade;
-                const matchSection = !selectedSection || student.section === selectedSection;
-                if (matchGrade && matchSection) {
-                    student.behaviors.forEach(behavior => {
-                        if (behaviorCounts.hasOwnProperty(behavior)) {
-                            behaviorCounts[behavior]++;
-                        }
-                    });
-                }
-            });
-
-            const labels = Object.keys(behaviorCounts).filter(label => behaviorCounts[label] > 0);
-            const data = labels.map(label => behaviorCounts[label]);
-            const colors = labels.map((_, i) => [
-                'rgba(255, 99, 132, 0.7)',
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(255, 206, 86, 0.7)',
-                'rgba(75, 192, 192, 0.7)',
-                'rgba(153, 102, 255, 0.7)'
-            ][i % 5]);
-
-            if (statsChart) {
-                statsChart.destroy();
-            }
-
-            const ctx = document.getElementById('statsChart').getContext('2d');
-            statsChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'عدد السلوكيات',
-                        data: data,
-                        backgroundColor: colors,
-                        borderColor: colors.map(color => color.replace('0.7', '1')),
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'top' },
-                        title: {
-                            display: true,
-                            text: `إحصائيات السلوك للصف: ${selectedGrade || 'اختر صفًا'} - الفصل: ${selectedSection || 'اختر فصلًا'}`
-                        }
-                    }
-                }
-            });
-        }
-
-        function updateStudentList() {
-            const selectedSection = document.getElementById('sendSection').value;
-            const studentSelect = document.getElementById('sendStudent');
-            studentSelect.innerHTML = '<option value="">اختر الطالب</option>';
-
-            const filteredStudents = students.filter(student => !selectedSection || student.section === selectedSection);
-            filteredStudents.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
-
-            filteredStudents.forEach(student => {
-                const option = document.createElement('option');
-                option.value = student.name;
-                option.text = student.name;
-                studentSelect.add(option);
-            });
-
-            displayStudentDetails();
-        }
-
-        function displayStudentDetails() {
-            const selectedStudent = document.getElementById('sendStudent').value;
-            const studentDetailsTable = document.getElementById('studentDetailsTable');
-            const studentDetailsBody = document.getElementById('studentDetailsBody');
-            const whatsappButton = document.getElementById('whatsappButton');
-            studentDetailsBody.innerHTML = '';
-
-            if (!selectedStudent) {
-                studentDetailsTable.style.display = 'none';
-                whatsappButton.style.display = 'none';
-                return;
-            }
-
-            const student = students.find(s => s.name === selectedStudent);
-            const savedStudent = savedStudents.find(s => s.name === selectedStudent);
-            if (!student) {
-                studentDetailsTable.style.display = 'none';
-                whatsappButton.style.display = 'none';
-                return;
-            }
-
-            const behaviors = savedStudent ? savedStudent.behaviors : [];
-            const score = savedStudent ? savedStudent.score : student.score;
-            const notes = savedStudent ? savedStudent.notes : '';
-
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${student.name}</td>
-                <td>${student.grade || 'غير محدد'}</td>
-                <td>${student.section || 'غير محدد'}</td>
-                <td>${behaviors.length > 0 ? behaviors.join('<br>') : 'لا توجد سلوكيات'}</td>
-                <td>${score}</td>
-                <td>${notes || 'لا توجد ملاحظات'}</td>
-            `;
-            studentDetailsBody.appendChild(row);
-            studentDetailsTable.style.display = '';
-            whatsappButton.style.display = '';
-        }
-
-        function sendToWhatsApp() {
-            const selectedStudent = document.getElementById('sendStudent').value;
-            if (!selectedStudent) {
-                alert('يرجى اختيار طالب لإرسال البيانات');
-                return;
-            }
-
-            const row = document.getElementById('studentDetailsBody').getElementsByTagName('tr')[0];
-            const name = row.cells[0].textContent;
-            const grade = row.cells[1].textContent;
-            const section = row.cells[2].textContent;
-            const behaviors = row.cells[3].innerHTML.replace(/<br>/g, '\n');
-            const score = row.cells[4].textContent;
-            const notes = row.cells[5].textContent;
-
-            const message = `بيانات الطالب:\n` +
-                           `الاسم: ${name}\n` +
-                           `الصف: ${grade}\n` +
-                           `الفصل: ${section}\n` +
-                           `السلوكيات:\n${behaviors}\n` +
-                           `الدرجة: ${score}\n` +
-                           `ملاحظات على الطالب: ${notes}`;
-
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-            window.open(whatsappUrl, '_blank');
-        }
-
-        function handleFileUpload(event) {
-            const files = event.target.files;
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const mediaData = {
-                        type: file.type.startsWith('image') ? 'image' : 'video',
-                        src: e.target.result,
-                        description: ''
-                    };
-                    mediaItems.push(mediaData);
-                    renderMediaItems();
-                    saveMediaData();
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function addMediaFromLink() {
-            const link = document.getElementById('mediaLink').value.trim();
-            if (!link) {
-                alert('يرجى إدخال رابط الصورة أو الفيديو');
-                return;
-            }
-
-            let mediaData;
-            if (link.includes('youtube.com') || link.includes('youtu.be')) {
-                const videoId = link.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
-                if (videoId) {
-                    mediaData = { type: 'youtube', src: `https://www.youtube.com/embed/${videoId}`, description: '' };
-                } else {
-                    alert('رابط يوتيوب غير صالح');
-                    return;
-                }
-            } else if (link.match(/\.(jpeg|jpg|png|gif)$/i)) {
-                mediaData = { type: 'image', src: link, description: '' };
-            } else if (link.match(/\.(mp4|webm|ogg)$/i)) {
-                mediaData = { type: 'video', src: link, description: '' };
-            } else {
-                alert('الرابط غير مدعوم (يجب أن يكون رابط يوتيوب أو صورة أو فيديو)');
-                return;
-            }
-
-            mediaItems.push(mediaData);
-            renderMediaItems();
-            saveMediaData();
-            document.getElementById('mediaLink').value = '';
-        }
-
-        function renderMediaItems() {
-            const mediaContainer = document.getElementById('mediaContainer');
-            mediaContainer.innerHTML = '';
-            mediaItems.forEach((media, index) => {
-                const mediaItem = document.createElement('div');
-                mediaItem.classList.add('media-item');
-                mediaItem.setAttribute('draggable', 'true');
-                let mediaElement;
-                if (media.type === 'image') {
-                    mediaElement = `<img src="${media.src}" alt="صورة" ondblclick="openFullscreen('${media.src}')">`;
-                } else if (media.type === 'video') {
-                    mediaElement = `<video src="${media.src}" controls></video>`;
-                } else if (media.type === 'youtube') {
-                    mediaElement = `<iframe src="${media.src}" frameborder="0" allowfullscreen></iframe>`;
-                }
-                mediaItem.innerHTML = `
-                    <span class="drag-handle">☰</span>
-                    ${mediaElement}
-                    <textarea placeholder="أدخل وصفًا أو ملاحظات" onchange="updateMediaDescription(${index}, this.value)">${media.description}</textarea>
-                    <button class="delete-btn" onclick="deleteMediaItem(${index})">حذف</button>
-                `;
-                mediaContainer.appendChild(mediaItem);
-                setupMediaDragEvents(mediaItem);
-            });
-        }
-
-        function updateMediaDescription(index, description) {
-            mediaItems[index].description = description;
-            saveMediaData();
-        }
-
-        function deleteMediaItem(index) {
-            mediaItems.splice(index, 1);
-            renderMediaItems();
-            saveMediaData();
         }
 
         function saveMediaData() {
-            localStorage.setItem('mediaData', JSON.stringify(mediaItems));
+            localStorage.setItem('mediaItems', JSON.stringify(mediaItems));
         }
 
         function loadMediaData() {
-            const data = localStorage.getItem('mediaData');
+            const data = localStorage.getItem('mediaItems');
             if (data) {
                 mediaItems = JSON.parse(data);
                 renderMediaItems();
             }
         }
 
-        function openFullscreen(src) {
-            const overlay = document.getElementById('fullscreenOverlay');
-            const fullscreenImage = document.getElementById('fullscreenImage');
-            fullscreenImage.src = src;
-            overlay.style.display = 'flex';
-        }
-
-        function closeFullscreen() {
-            document.getElementById('fullscreenOverlay').style.display = 'none';
-        }
-
-        // تبويب ملفات PDF
-        function handlePDFUpload(event) {
-            const files = event.target.files;
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const pdfData = {
-                        name: file.name,
-                        src: e.target.result,
-                        description: '',
-                        isLocal: true
-                    };
-                    pdfItems.push(pdfData);
-                    renderPDFItems();
-                    savePDFData();
-                    alert(`تم حفظ ملف "${file.name}" تلقائيًا.`);
-                };
-                reader.onerror = function() {
-                    alert('حدث خطأ أثناء قراءة ملف PDF: ' + file.name);
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function addPDFFromLink() {
-            const link = document.getElementById('pdfLink').value.trim();
-            if (!link) {
-                alert('يرجى إدخال رابط ملف PDF');
-                return;
-            }
-            if (!link.match(/\.(pdf)$/i)) {
-                alert('الرابط يجب أن يكون لملف PDF');
-                return;
-            }
-            const pdfData = {
-                name: link.split('/').pop() || 'ملف PDF',
-                src: link,
-                description: '',
-                isLocal: false
-            };
-            pdfItems.push(pdfData);
-            renderPDFItems();
-            savePDFData();
-            alert(`تم حفظ ملف "${pdfData.name}" تلقائيًا.`);
-            document.getElementById('pdfLink').value = '';
-        }
-
-        function renderPDFItems() {
-            const pdfContainer = document.getElementById('pdfContainer');
-            pdfContainer.innerHTML = '';
-            pdfItems.forEach((pdf, index) => {
-                const pdfItem = document.createElement('div');
-                pdfItem.classList.add('pdf-item');
-                pdfItem.setAttribute('draggable', 'true');
-                
-                let pdfDisplay;
-                if (pdf.isLocal) {
-                    pdfDisplay = `
-                        <embed src="${pdf.src}" type="application/pdf" title="${pdf.name}">
-                        <button class="open-btn" onclick="openPDFInNewTab(${index})">فتح في صفحة جديدة</button>
-                    `;
-                } else {
-                    pdfDisplay = `<a href="${pdf.src}" target="_blank">${pdf.name}</a>`;
-                }
-
-                pdfItem.innerHTML = `
-                    <span class="drag-handle">☰</span>
-                    ${pdfDisplay}
-                    <textarea placeholder="أدخل وصفًا أو ملاحظات" onchange="updatePDFDescription(${index}, this.value)">${pdf.description}</textarea>
-                    <button class="delete-btn" onclick="deletePDFItem(${index})">حذف</button>
-                `;
-                pdfContainer.appendChild(pdfItem);
-                setupPDFDragEvents(pdfItem);
-            });
-        }
-
-        function openPDFInNewTab(index) {
-            const pdf = pdfItems[index];
-            if (pdf.isLocal) {
-                const dataUrl = pdf.src;
-                const base64String = dataUrl.split(',')[1];
-                const byteCharacters = atob(base64String);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: 'application/pdf' });
-                const url = URL.createObjectURL(blob);
-                window.open(url, '_blank');
-            } else {
-                window.open(pdf.src, '_blank');
-            }
-        }
-
-        function updatePDFDescription(index, description) {
-            pdfItems[index].description = description;
-            savePDFData();
-        }
-
-        function deletePDFItem(index) {
-            pdfItems.splice(index, 1);
-            renderPDFItems();
-            savePDFData();
-        }
-
         function savePDFData() {
-            localStorage.setItem('pdfData', JSON.stringify(pdfItems));
+            localStorage.setItem('pdfItems', JSON.stringify(pdfItems));
         }
 
         function loadPDFData() {
-            const data = localStorage.getItem('pdfData');
+            const data = localStorage.getItem('pdfItems');
             if (data) {
                 pdfItems = JSON.parse(data);
                 renderPDFItems();
             }
         }
 
-        function setupRowDragEvents(row) {
-            row.addEventListener('dragstart', (e) => {
-                row.classList.add('dragging');
-                e.dataTransfer.setData('text/plain', row.rowIndex);
-            });
-
-            row.addEventListener('dragend', () => {
-                row.classList.remove('dragging');
-            });
-
-            row.addEventListener('dragover', (e) => {
-                e.preventDefault();
-            });
-
-            row.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                const targetIndex = Array.from(row.parentNode.children).indexOf(row);
-                if (draggedIndex !== targetIndex) {
-                    const [draggedStudent] = students.splice(draggedIndex, 1);
-                    students.splice(targetIndex, 0, draggedStudent);
-                    renderKashfTable();
-                    saveKashfData();
-                }
-            });
+        function saveToHistory() {
+            const state = {
+                students: JSON.parse(JSON.stringify(students)),
+                savedStudents: JSON.parse(JSON.stringify(savedStudents)),
+                participationData: JSON.parse(JSON.stringify(participationData)),
+                mediaItems: JSON.parse(JSON.stringify(mediaItems)),
+                pdfItems: JSON.parse(JSON.stringify(pdfItems))
+            };
+            historyStack.push(state);
+            if (historyStack.length > 10) {
+                historyStack.shift();
+            }
         }
 
-        function setupMediaDragEvents(mediaItem) {
-            mediaItem.addEventListener('dragstart', (e) => {
-                mediaItem.classList.add('dragging');
-                const index = Array.from(mediaItem.parentNode.children).indexOf(mediaItem);
-                e.dataTransfer.setData('text/plain', index);
-            });
-
-            mediaItem.addEventListener('dragend', () => {
-                mediaItem.classList.remove('dragging');
-            });
-
-            mediaItem.addEventListener('dragover', (e) => {
-                e.preventDefault();
-            });
-
-            mediaItem.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                const targetIndex = Array.from(mediaItem.parentNode.children).indexOf(mediaItem);
-                if (draggedIndex !== targetIndex) {
-                    const [draggedMedia] = mediaItems.splice(draggedIndex, 1);
-                    mediaItems.splice(targetIndex, 0, draggedMedia);
-                    renderMediaItems();
-                    saveMediaData();
-                }
-            });
-        }
-
-        function setupPDFDragEvents(pdfItem) {
-            pdfItem.addEventListener('dragstart', (e) => {
-                pdfItem.classList.add('dragging');
-                const index = Array.from(pdfItem.parentNode.children).indexOf(pdfItem);
-                e.dataTransfer.setData('text/plain', index);
-            });
-
-            pdfItem.addEventListener('dragend', () => {
-                pdfItem.classList.remove('dragging');
-            });
-
-            pdfItem.addEventListener('dragover', (e) => {
-                e.preventDefault();
-            });
-
-            pdfItem.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                const targetIndex = Array.from(pdfItem.parentNode.children).indexOf(pdfItem);
-                if (draggedIndex !== targetIndex) {
-                    const [draggedPDF] = pdfItems.splice(draggedIndex, 1);
-                    pdfItems.splice(targetIndex, 0, draggedPDF);
-                    renderPDFItems();
+        function setupPDFDragAndDrop() {
+            const items = document.querySelectorAll('.pdf-item');
+            items.forEach(item => {
+                item.addEventListener('dragstart', () => item.classList.add('dragging'));
+                item.addEventListener('dragend', () => {
+                    item.classList.remove('dragging');
+                    const newOrder = Array.from(document.querySelectorAll('.pdf-item')).map(i => {
+                        const index = pdfItems.findIndex(p => p.src === i.querySelector('embed').src);
+                        return pdfItems[index];
+                    });
+                    pdfItems = newOrder;
                     savePDFData();
+                    saveToHistory();
+                });
+            });
+            const container = document.getElementById('pdfContainer');
+            container.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(container, e.clientY, '.pdf-item');
+                const dragging = document.querySelector('.pdf-item.dragging');
+                if (afterElement == null) {
+                    container.appendChild(dragging);
+                } else {
+                    container.insertBefore(dragging, afterElement);
                 }
             });
         }
 
-        function setupDragAndDrop() {
-            const tableBody = document.getElementById('tableBody');
-            const rows = tableBody.getElementsByTagName('tr');
-            for (let row of rows) {
-                setupRowDragEvents(row);
-            }
-
-            const mediaContainer = document.getElementById('mediaContainer');
-            const mediaItems = mediaContainer.getElementsByClassName('media-item');
-            for (let item of mediaItems) {
-                setupMediaDragEvents(item);
-            }
-
-            const pdfContainer = document.getElementById('pdfContainer');
-            const pdfItems = pdfContainer.getElementsByClassName('pdf-item');
-            for (let item of pdfItems) {
-                setupPDFDragEvents(item);
-            }
+        function getDragAfterElement(container, y, selector) {
+            const draggableElements = [...container.querySelectorAll(selector + ':not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
     </script>
 </body>
