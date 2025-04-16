@@ -26,30 +26,36 @@
         }
         .tab button {
             flex: 0 0 auto;
-            border: none;
+            border: 2px solid #d4af37; /* حواف ذهبية */
             outline: none;
             cursor: pointer;
             padding: 12px 20px;
             font-size: 16px;
             transition: 0.3s;
-            border-radius: 5px;
-            color: white;
+            border-radius: 25px; /* حواف مشطوفة */
+            color: #333; /* لون النص */
+            background: #fff; /* لون الزر أبيض */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* تأثير الظل للأسفل */
             min-width: 120px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
         }
         .tab button:hover {
-            opacity: 0.9;
+            background: #f0f0f0; /* لون خفيف عند التمرير */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* زيادة الظل عند التمرير */
         }
         .tab button.active {
-            opacity: 0.7;
+            background: #e0e0e0; /* لون خلفية الزر النشط */
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1); /* تأثير داخلي للزر النشط */
         }
-        .tablinks.kashf-tab { background-color: #42A5F5; }
-        .tablinks.participation-tab { background-color: #AB47BC; }
-        .tablinks.input-table-tab { background-color: #4DD0E1; }
-        .tablinks.stats-tab { background-color: #FFCA28; }
-        .tablinks.books-tab { background-color: #66BB6A; }
-        .tablinks.send-tab { background-color: #26A69A; }
-        .tablinks.media-tab { background-color: #EF5350; }
+        .tablinks.kashf-tab { background: #fff; }
+        .tablinks.participation-tab { background: #fff; }
+        .tablinks.input-table-tab { background: #fff; }
+        .tablinks.stats-tab { background: #fff; }
+        .tablinks.books-tab { background: #fff; }
+        .tablinks.send-tab { background: #fff; }
+        .tablinks.media-tab { background: #fff; }
         .tabcontent {
             display: none;
             padding: 6px 12px;
@@ -637,6 +643,15 @@
                     if (!db.objectStoreNames.contains('mediaGroups')) {
                         db.createObjectStore('mediaGroups', { keyPath: 'id', autoIncrement: true });
                     }
+                    if (!db.objectStoreNames.contains('students')) {
+                        db.createObjectStore('students', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!db.objectStoreNames.contains('savedStudents')) {
+                        db.createObjectStore('savedStudents', { keyPath: 'id', autoIncrement: true });
+                    }
+                    if (!db.objectStoreNames.contains('participation')) {
+                        db.createObjectStore('participation', { keyPath: 'id', autoIncrement: true });
+                    }
                 };
 
                 request.onsuccess = function(event) {
@@ -668,6 +683,149 @@
             await loadSavedData();
             await loadParticipationData();
             await loadMediaData();
+        }
+
+        async function loadKashfData() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['students'], 'readonly');
+                const objectStore = transaction.objectStore('students');
+                const request = objectStore.getAll();
+                request.onsuccess = function(event) {
+                    students = event.target.result;
+                    students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+                    resolve();
+                };
+                request.onerror = function(event) {
+                    console.error("Error loading kashf data:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function saveKashfData() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['students'], 'readwrite');
+                const objectStore = transaction.objectStore('students');
+                objectStore.clear();
+                students.forEach(student => {
+                    objectStore.add(student);
+                });
+                transaction.oncomplete = function() {
+                    resolve();
+                };
+                transaction.onerror = function(event) {
+                    console.error("Error saving kashf data:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function loadSavedData() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['savedStudents'], 'readonly');
+                const objectStore = transaction.objectStore('savedStudents');
+                const request = objectStore.getAll();
+                request.onsuccess = function(event) {
+                    savedStudents = event.target.result;
+                    savedStudents.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    resolve();
+                };
+                request.onerror = function(event) {
+                    console.error("Error loading saved data:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function saveSavedData() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['savedStudents'], 'readwrite');
+                const objectStore = transaction.objectStore('savedStudents');
+                objectStore.clear();
+                savedStudents.forEach(student => {
+                    objectStore.add(student);
+                });
+                transaction.oncomplete = function() {
+                    resolve();
+                };
+                transaction.onerror = function(event) {
+                    console.error("Error saving saved data:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function loadParticipationData() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['participation'], 'readonly');
+                const objectStore = transaction.objectStore('participation');
+                const request = objectStore.getAll();
+                request.onsuccess = function(event) {
+                    participationData = event.target.result.reduce((acc, item) => {
+                        acc[item.studentKey] = item.data;
+                        return acc;
+                    }, {});
+                    resolve();
+                };
+                request.onerror = function(event) {
+                    console.error("Error loading participation data:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function saveParticipationData() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['participation'], 'readwrite');
+                const objectStore = transaction.objectStore('participation');
+                objectStore.clear();
+                Object.entries(participationData).forEach(([studentKey, data]) => {
+                    objectStore.add({ studentKey, data });
+                });
+                transaction.oncomplete = function() {
+                    resolve();
+                };
+                transaction.onerror = function(event) {
+                    console.error("Error saving participation data:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function loadMediaData() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['mediaGroups'], 'readonly');
+                const objectStore = transaction.objectStore('mediaGroups');
+                const request = objectStore.getAll();
+                request.onsuccess = function(event) {
+                    event.target.result.forEach(item => {
+                        mediaGroups[item.grade] = item.media;
+                    });
+                    resolve();
+                };
+                request.onerror = function(event) {
+                    console.error("Error loading media data:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function saveMediaData() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['mediaGroups'], 'readwrite');
+                const objectStore = transaction.objectStore('mediaGroups');
+                objectStore.clear();
+                Object.entries(mediaGroups).forEach(([grade, media]) => {
+                    objectStore.add({ grade, media });
+                });
+                transaction.oncomplete = function() {
+                    resolve();
+                };
+                transaction.onerror = function(event) {
+                    console.error("Error saving media data:", event.target.error);
+                    reject(event.target.error);
+                };
+            });
         }
 
         function openTab(evt, tabName) {
@@ -1169,51 +1327,9 @@
             updateParticipationTable();
         }
 
-        function updateStatsChart() {
-            const grade = document.getElementById('statsGrade').value;
-            const section = document.getElementById('statsSection').value;
-            const filteredStudents = savedStudents.filter(student => 
-                (!grade || student.grade === grade) &&
-                (!section || student.section === section)
-            );
-            const behaviorCounts = { 'نسي الكتاب': 0, 'التحدث أثناء الدرس': 0, 'متأخر': 0, 'نائم': 0, 'رجوع': 0 };
-            filteredStudents.forEach(student => {
-                if (student.behavior && behaviorCounts.hasOwnProperty(student.behavior)) {
-                    behaviorCounts[student.behavior]++;
-                }
-            });
-            const ctx = document.getElementById('statsChart').getContext('2d');
-            if (statsChart) statsChart.destroy();
-            statsChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: Object.keys(behaviorCounts),
-                    datasets: [{
-                        label: 'عدد المخالفات',
-                        data: Object.values(behaviorCounts),
-                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
-                        borderColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        title: {
-                            display: true,
-                            text: 'إحصائيات السلوك'
-                        }
-                    }
-                }
-            });
-        }
-
         function updateStatsSections() {
-            const grade = document.getElementById('statsGrade').value;
-            const sections = [...new Set(savedStudents.filter(s => !grade || s.grade === grade).map(s => s.section).filter(s => s))];
+            const gradeFilter = document.getElementById('statsGrade').value;
+            const sections = [...new Set(savedStudents.filter(s => !gradeFilter || s.grade === gradeFilter).map(s => s.section).filter(s => s))];
             const sectionSelect = document.getElementById('statsSection');
             sectionSelect.innerHTML = '<option value="">اختر الفصل</option>';
             sections.forEach(section => {
@@ -1224,9 +1340,54 @@
             });
         }
 
+        function updateStatsChart() {
+            const gradeFilter = document.getElementById('statsGrade').value;
+            const sectionFilter = document.getElementById('statsSection').value;
+            const filteredStudents = savedStudents.filter(student => 
+                (!gradeFilter || student.grade === gradeFilter) &&
+                (!sectionFilter || student.section === sectionFilter)
+            );
+
+            const behaviorCounts = {};
+            filteredStudents.forEach(student => {
+                if (student.behavior) {
+                    behaviorCounts[student.behavior] = (behaviorCounts[student.behavior] || 0) + 1;
+                }
+            });
+
+            const labels = Object.keys(behaviorCounts);
+            const data = Object.values(behaviorCounts);
+
+            if (statsChart) {
+                statsChart.destroy();
+            }
+
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            statsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'عدد الحالات',
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
         function updateSendSections() {
-            const grade = document.getElementById('sendGrade').value;
-            const sections = [...new Set(students.filter(s => !grade || s.grade === grade).map(s => s.section).filter(s => s))];
+            const gradeFilter = document.getElementById('sendGrade').value;
+            const sections = [...new Set(students.filter(s => !gradeFilter || s.grade === gradeFilter).map(s => s.section).filter(s => s))];
             const sectionSelect = document.getElementById('sendSection');
             sectionSelect.innerHTML = '<option value="">اختر الفصل</option>';
             sections.forEach(section => {
@@ -1239,11 +1400,11 @@
         }
 
         function updateFilteredStudentList() {
-            const grade = document.getElementById('sendGrade').value;
-            const section = document.getElementById('sendSection').value;
+            const gradeFilter = document.getElementById('sendGrade').value;
+            const sectionFilter = document.getElementById('sendSection').value;
             const filteredStudents = students.filter(student => 
-                (!grade || student.grade === grade) &&
-                (!section || student.section === section)
+                (!gradeFilter || student.grade === gradeFilter) &&
+                (!sectionFilter || student.section === sectionFilter)
             );
             const studentSelect = document.getElementById('filteredStudents');
             studentSelect.innerHTML = '<option value="">اختر الطالب</option>';
@@ -1262,357 +1423,178 @@
                 document.getElementById('whatsappButton').style.display = 'none';
                 return;
             }
+
             const studentRecords = savedStudents.filter(s => s.name === studentName);
             const tableBody = document.getElementById('studentDetailsBody');
             tableBody.innerHTML = '';
-            studentRecords.forEach(record => {
+            studentRecords.forEach(student => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${record.name}</td>
-                    <td>${record.grade}</td>
-                    <td>${record.section}</td>
-                    <td>${record.behavior}</td>
-                    <td>${record.score}</td>
-                    <td>${record.notes}</td>
+                    <td>${student.name}</td>
+                    <td>${student.grade}</td>
+                    <td>${student.section}</td>
+                    <td>${student.behavior || 'لا يوجد'}</td>
+                    <td>${student.score}</td>
+                    <td>${student.notes || 'لا يوجد'}</td>
                 `;
                 tableBody.appendChild(row);
             });
-            document.getElementById('studentDetailsTable').style.display = 'table';
+
+            document.getElementById('studentDetailsTable').style.display = 'block';
             document.getElementById('whatsappButton').style.display = 'block';
         }
 
         function sendToWhatsApp() {
             const studentName = document.getElementById('filteredStudents').value;
+            if (!studentName) {
+                alert('يرجى اختيار طالب أولاً');
+                return;
+            }
+
             const studentRecords = savedStudents.filter(s => s.name === studentName);
-            let message = `تقرير الطالب: ${studentName}\n\n`;
+            let message = `تفاصيل الطالب: ${studentName}\n\n`;
             studentRecords.forEach(record => {
-                message += `التاريخ: ${record.date}\n`;
-                message += `الصف: ${record.grade}\n`;
-                message += `الفصل: ${record.section}\n`;
-                message += `السلوك: ${record.behavior}\n`;
-                message += `الدرجة: ${record.score}\n`;
-                message += `ملاحظات: ${record.notes}\n\n`;
+                message += `التاريخ: ${record.date} - اليوم: ${record.day}\n`;
+                message += `السلوك: ${record.behavior || 'لا يوجد'} - الدرجة: ${record.score}\n`;
+                message += `الملاحظات: ${record.notes || 'لا يوجد'}\n\n`;
             });
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
 
-        async function handleMediaUpload(event, grade) {
+        function handleMediaUpload(event, grade) {
             const files = event.target.files;
-            if (!grade) {
-                alert('يرجى اختيار الصف');
-                return;
-            }
-            if (files.length === 0) {
-                alert('يرجى اختيار ملفات للرفع');
-                return;
-            }
-
-            const newGroup = [];
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                let type;
-                if (file.type.startsWith('image/')) {
-                    type = 'image';
-                } else if (file.type.startsWith('video/')) {
-                    type = 'video';
-                } else if (file.type === 'application/pdf') {
-                    type = 'pdf';
-                } else {
-                    alert(`نوع الملف غير مدعوم: ${file.name}`);
-                    continue;
-                }
-                newGroup.push({
-                    blob: file,
-                    type: type,
-                    description: '',
-                    timestamp: new Date().toISOString()
-                });
-            }
-            if (newGroup.length > 0) {
-                mediaGroups[grade].push(newGroup);
-                await saveMediaData();
-                renderMediaItems();
-                saveToHistory();
+            for (let file of files) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const mediaItem = {
+                        type: file.type.startsWith('image') ? 'image' : file.type.startsWith('video') ? 'video' : 'pdf',
+                        src: e.target.result,
+                        name: file.name,
+                        notes: ''
+                    };
+                    mediaGroups[grade].push(mediaItem);
+                    saveMediaData();
+                    renderMediaItems();
+                };
+                reader.readAsDataURL(file);
             }
             event.target.value = '';
         }
 
-        async function addMediaFromLink() {
+        function addMediaFromLink() {
             const link = document.getElementById('mediaLink').value.trim();
             const grade = document.getElementById('mediaGradeSelect').value;
-            if (!link) {
-                alert('يرجى إدخال رابط');
-                return;
-            }
-            if (!grade) {
-                alert('يرجى اختيار الصف');
+            if (!link || !grade) {
+                alert('يرجى إدخال رابط واختيار صف');
                 return;
             }
 
-            let type;
-            if (link.toLowerCase().endsWith('.pdf')) {
-                type = 'pdf';
-            } else if (link.includes('youtube.com') || link.includes('youtu.be')) {
-                type = 'youtube';
-            } else if (link.match(/\.(jpeg|jpg|png|gif|bmp|webp)$/i)) {
-                type = 'image';
-            } else if (link.match(/\.(mp4|webm|ogg)$/i)) {
-                type = 'video';
-            } else {
-                alert('نوع الرابط غير مدعوم');
-                return;
-            }
-
-            const newGroup = [{
+            const mediaItem = {
+                type: link.match(/\.(jpg|jpeg|png|gif)$/i) ? 'image' :
+                      link.match(/\.(mp4|webm|ogg)$/i) ? 'video' :
+                      link.match(/\.(pdf)$/i) ? 'pdf' : 'unknown',
                 src: link,
-                type: type,
-                description: '',
-                timestamp: new Date().toISOString()
-            }];
-            mediaGroups[grade].push(newGroup);
-            await saveMediaData();
-            renderMediaItems();
-            saveToHistory();
-            document.getElementById('mediaLink').value = '';
-            document.getElementById('mediaGradeSelect').value = '';
+                name: link.split('/').pop(),
+                notes: ''
+            };
+            if (mediaItem.type !== 'unknown') {
+                mediaGroups[grade].push(mediaItem);
+                saveMediaData();
+                renderMediaItems();
+                document.getElementById('mediaLink').value = '';
+            } else {
+                alert('رابط غير مدعوم. يرجى استخدام رابط لصورة، فيديو، أو ملف PDF');
+            }
         }
 
         function renderMediaItems() {
             const container = document.getElementById('mediaContainer');
             container.innerHTML = '';
-
-            for (const grade in mediaGroups) {
-                if (mediaGroups[grade].length === 0) continue;
-
-                const gradeSection = document.createElement('div');
-                gradeSection.className = 'media-group';
-                gradeSection.innerHTML = `<div class="media-group-header">${grade}</div>`;
-                const mediaContainer = document.createElement('div');
-                mediaContainer.className = 'media-container';
-
-                mediaGroups[grade].forEach((group, groupIndex) => {
-                    if (group.length === 0) return;
-
-                    const column = document.createElement('div');
-                    column.className = 'media-column';
-
-                    const slideContainer = document.createElement('div');
-                    slideContainer.className = 'media-slide-container';
-                    slideContainer.setAttribute('data-group-index', groupIndex);
-                    slideContainer.setAttribute('data-grade', grade);
-
-                    group.forEach((item, index) => {
-                        const slide = document.createElement('div');
-                        slide.className = `media-slide ${index === 0 ? 'active' : ''}`;
-                        let element = '';
+            Object.entries(mediaGroups).forEach(([grade, mediaList]) => {
+                if (mediaList.length > 0) {
+                    const group = document.createElement('div');
+                    group.className = 'media-group';
+                    group.innerHTML = `<div class="media-group-header">${grade}</div>`;
+                    const mediaColumn = document.createElement('div');
+                    mediaColumn.className = 'media-column';
+                    mediaList.forEach((item, index) => {
+                        const mediaItem = document.createElement('div');
+                        mediaItem.className = 'media-item';
+                        mediaItem.draggable = true;
+                        mediaItem.ondragstart = function(e) { e.dataTransfer.setData('text/plain', `${grade},${index}`); };
+                        mediaItem.ondragover = function(e) { e.preventDefault(); };
+                        mediaItem.ondrop = function(e) {
+                            e.preventDefault();
+                            const [dragGrade, dragIndex] = e.dataTransfer.getData('text').split(',');
+                            if (dragGrade === grade) {
+                                const draggedItem = mediaGroups[dragGrade][dragIndex];
+                                mediaGroups[dragGrade].splice(dragIndex, 1);
+                                mediaGroups[grade].splice(index, 0, draggedItem);
+                                saveMediaData();
+                                renderMediaItems();
+                            }
+                        };
                         if (item.type === 'image') {
-                            const src = item.blob ? URL.createObjectURL(item.blob) : item.src;
-                            element = `<img src="${src}" onclick="openFullscreen('${grade}', ${groupIndex}, ${index})">`;
+                            mediaItem.innerHTML = `<img src="${item.src}" onclick="openFullscreen('${item.src}', ${index}, '${grade}')">`;
                         } else if (item.type === 'video') {
-                            const src = item.blob ? URL.createObjectURL(item.blob) : item.src;
-                            element = `<video src="${src}" controls></video>`;
-                        } else if (item.type === 'youtube') {
-                            const videoId = item.src.includes('youtu.be') ? item.src.split('/').pop() : new URLSearchParams(new URL(item.src).search).get('v');
-                            element = `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+                            mediaItem.innerHTML = `<video controls><source src="${item.src}" type="video/mp4">Your browser does not support the video tag.</video>`;
                         } else if (item.type === 'pdf') {
-                            const src = item.blob ? URL.createObjectURL(item.blob) : item.src;
-                            element = `
-                                <embed src="${src}" type="application/pdf">
-                                <button class="open-btn" onclick="openPDFInNewTab('${src}')">فتح في صفحة جديدة</button>
-                            `;
+                            mediaItem.innerHTML = `<embed src="${item.src}">`;
                         }
-                        slide.innerHTML = `
-                            ${element}
-                            <textarea placeholder="أدخل وصفًا" onchange="updateMediaDescription('${grade}', ${groupIndex}, ${index}, this.value)">${item.description}</textarea>
-                        `;
-                        slideContainer.appendChild(slide);
+                        mediaItem.innerHTML += `<textarea placeholder="ملاحظات" onchange="updateMediaNotes('${grade}', ${index}, this.value)">${item.notes}</textarea>`;
+                        mediaItem.innerHTML += `<button class="delete-btn" onclick="deleteMedia('${grade}', ${index})">حذف</button>`;
+                        mediaColumn.appendChild(mediaItem);
                     });
-
-                    if (group.length > 1) {
-                        const controls = document.createElement('div');
-                        controls.className = 'media-slide-controls';
-                        controls.innerHTML = `
-                            <button class="nav-btn" onclick="changeSlide('${grade}', ${groupIndex}, -1)">❮</button>
-                            <button class="delete-btn" onclick="deleteMediaItem('${grade}', ${groupIndex}, 0)">حذف</button>
-                            <button class="nav-btn" onclick="changeSlide('${grade}', ${groupIndex}, 1)">❯</button>
-                        `;
-                        slideContainer.appendChild(controls);
-                    } else {
-                        const controls = document.createElement('div');
-                        controls.className = 'media-slide-controls';
-                        controls.innerHTML = `
-                            <button class="delete-btn" onclick="deleteMediaItem('${grade}', ${groupIndex}, 0)">حذف</button>
-                        `;
-                        slideContainer.appendChild(controls);
-                    }
-
-                    column.appendChild(slideContainer);
-                    mediaContainer.appendChild(column);
-                });
-
-                gradeSection.appendChild(mediaContainer);
-                container.appendChild(gradeSection);
-            }
-        }
-
-        function changeSlide(grade, groupIndex, direction) {
-            const slideContainer = document.querySelector(`.media-slide-container[data-grade="${grade}"][data-group-index="${groupIndex}"]`);
-            const slides = slideContainer.querySelectorAll('.media-slide');
-            let currentIndex = Array.from(slides).findIndex(slide => slide.classList.contains('active'));
-            slides[currentIndex].classList.remove('active');
-            currentIndex = (currentIndex + direction + slides.length) % slides.length;
-            slides[currentIndex].classList.add('active');
-
-            const deleteBtn = slideContainer.querySelector('.media-slide-controls .delete-btn');
-            deleteBtn.setAttribute('onclick', `deleteMediaItem('${grade}', ${groupIndex}, ${currentIndex})`);
-        }
-
-        async function updateMediaDescription(grade, groupIndex, index, description) {
-            mediaGroups[grade][groupIndex][index].description = description;
-            await saveMediaData();
-            saveToHistory();
-        }
-
-        async function deleteMediaItem(grade, groupIndex, index) {
-            if (confirm('هل أنت متأكد من حذف هذا العنصر؟')) {
-                mediaGroups[grade][groupIndex].splice(index, 1);
-                if (mediaGroups[grade][groupIndex].length === 0) {
-                    mediaGroups[grade].splice(groupIndex, 1);
+                    group.appendChild(mediaColumn);
+                    container.appendChild(group);
                 }
-                await saveMediaData();
-                renderMediaItems();
-                saveToHistory();
-            }
+            });
         }
 
-        function openFullscreen(grade, groupIndex, index) {
-            currentGrade = grade;
-            currentGroupIndex = groupIndex;
-            currentImageIndex = index;
-            imageSources = mediaGroups[grade][groupIndex]
-                .filter(item => item.type === 'image')
-                .map(item => item.blob ? URL.createObjectURL(item.blob) : item.src);
-            if (imageSources.length === 0) return;
+        function updateMediaNotes(grade, index, notes) {
+            mediaGroups[grade][index].notes = notes;
+            saveMediaData();
+        }
+
+        function deleteMedia(grade, index) {
+            mediaGroups[grade].splice(index, 1);
+            saveMediaData();
+            renderMediaItems();
+        }
+
+        function openFullscreen(src, index, grade) {
             const overlay = document.getElementById('fullscreenOverlay');
-            const img = document.getElementById('fullscreenImage');
-            img.src = imageSources[currentImageIndex];
+            const image = document.getElementById('fullscreenImage');
+            imageSources = mediaGroups[grade].filter(item => item.type === 'image').map(item => item.src);
+            currentImageIndex = imageSources.indexOf(src);
+            currentGrade = grade;
+            image.src = src;
             overlay.style.display = 'flex';
-            updateNavigationButtons();
         }
 
         function closeFullscreen() {
-            const overlay = document.getElementById('fullscreenOverlay');
-            overlay.style.display = 'none';
-            currentImageIndex = -1;
-            currentGroupIndex = -1;
-            currentGrade = '';
-            imageSources = [];
+            document.getElementById('fullscreenOverlay').style.display = 'none';
         }
 
         function navigateImages(direction) {
-            currentImageIndex = (currentImageIndex + direction + imageSources.length) % imageSources.length;
-            const img = document.getElementById('fullscreenImage');
-            img.src = imageSources[currentImageIndex];
-            updateNavigationButtons();
-        }
-
-        function updateNavigationButtons() {
-            const prevBtn = document.querySelector('.prev-btn');
-            const nextBtn = document.querySelector('.next-btn');
-            if (imageSources.length <= 1) {
-                prevBtn.style.display = 'none';
-                nextBtn.style.display = 'none';
-            } else {
-                prevBtn.style.display = 'block';
-                nextBtn.style.display = 'block';
-            }
-        }
-
-        function openPDFInNewTab(src) {
-            try {
-                window.open(src, '_blank');
-            } catch (error) {
-                console.error('خطأ في فتح ملف PDF:', error);
-                alert('حدث خطأ أثناء فتح ملف PDF. يرجى التأكد من أن الرابط صحيح أو أن الملف متاح.');
-            }
-        }
-
-        function saveKashfData() {
-            localStorage.setItem('students', JSON.stringify(students));
-        }
-
-        function loadKashfData() {
-            const data = localStorage.getItem('students');
-            if (data) {
-                students = JSON.parse(data);
-                students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
-            }
-        }
-
-        function saveSavedData() {
-            localStorage.setItem('savedStudents', JSON.stringify(savedStudents));
-        }
-
-        function loadSavedData() {
-            const data = localStorage.getItem('savedStudents');
-            if (data) {
-                savedStudents = JSON.parse(data);
-            }
-        }
-
-        function saveParticipationData() {
-            localStorage.setItem('participationData', JSON.stringify(participationData));
-        }
-
-        function loadParticipationData() {
-            const data = localStorage.getItem('participationData');
-            if (data) {
-                participationData = JSON.parse(data);
-            }
-        }
-
-        async function saveMediaData() {
-            const transaction = db.transaction(['mediaGroups'], 'readwrite');
-            const store = transaction.objectStore('mediaGroups');
-            await store.clear();
-            let id = 1;
-            for (const grade in mediaGroups) {
-                mediaGroups[grade].forEach(group => {
-                    store.add({ id: id++, grade: grade, data: group });
-                });
-            }
-        }
-
-        async function loadMediaData() {
-            const transaction = db.transaction(['mediaGroups'], 'readonly');
-            const store = transaction.objectStore('mediaGroups');
-            const request = store.getAll();
-            return new Promise((resolve) => {
-                request.onsuccess = function() {
-                    mediaGroups = { 'الأول متوسط': [], 'الثاني متوسط': [], 'الثالث متوسط': [] };
-                    request.result.forEach(item => {
-                        if (mediaGroups[item.grade]) {
-                            mediaGroups[item.grade].push(item.data);
-                        }
-                    });
-                    resolve();
-                };
-            });
+            currentImageIndex += direction;
+            if (currentImageIndex < 0) currentImageIndex = imageSources.length - 1;
+            if (currentImageIndex >= imageSources.length) currentImageIndex = 0;
+            document.getElementById('fullscreenImage').src = imageSources[currentImageIndex];
         }
 
         function saveToHistory() {
-            historyStack.push({
-                students: JSON.parse(JSON.stringify(students)),
-                savedStudents: JSON.parse(JSON.stringify(savedStudents)),
-                participationData: JSON.parse(JSON.stringify(participationData)),
-                mediaGroups: JSON.parse(JSON.stringify(mediaGroups))
-            });
-            if (historyStack.length > 50) {
-                historyStack.shift();
-            }
+            historyStack.push(JSON.stringify({ students, savedStudents, participationData, mediaGroups }));
+            if (historyStack.length > 10) historyStack.shift();
         }
+
+        // إضافة التحقق من الأخطاء الشائعة
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('Error:', message, 'at line:', lineno, 'column:', colno, 'error:', error);
+            alert('حدث خطأ: ' + message + '. يرجى التحقق من وحدة التحكم للتفاصيل.');
+        };
     </script>
 </body>
 </html>
