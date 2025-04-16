@@ -26,28 +26,28 @@
         }
         .tab button {
             flex: 0 0 auto;
-            border: 2px solid #d4af37; /* حواف ذهبية */
+            border: 2px solid #d4af37;
             outline: none;
             cursor: pointer;
             padding: 12px 20px;
             font-size: 16px;
             transition: 0.3s;
-            border-radius: 25px; /* حواف مشطوفة */
-            color: #333; /* لون النص */
-            background: #fff; /* لون الزر أبيض */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* تأثير الظل للأسفل */
+            border-radius: 25px;
+            color: #333;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             min-width: 120px;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
         .tab button:hover {
-            background: #f0f0f0; /* لون خفيف عند التمرير */
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* زيادة الظل عند التمرير */
+            background: #f0f0f0;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
         .tab button.active {
-            background: #e0e0e0; /* لون خلفية الزر النشط */
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1); /* تأثير داخلي للزر النشط */
+            background: #e0e0e0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .tablinks.kashf-tab { background: #fff; }
         .tablinks.participation-tab { background: #fff; }
@@ -625,7 +625,6 @@
         let historyStack = [];
         let currentImageIndex = -1;
         let imageSources = [];
-        let currentGroupIndex = -1;
         let currentGrade = '';
         let batchGrade = '';
         let batchSection = '';
@@ -633,59 +632,120 @@
         let db;
         const dbName = "KashfDB";
         const dbVersion = 1;
+        let isDbReady = false;
+
+        // التحقق من دعم IndexedDB
+        if (!window.indexedDB) {
+            console.error("IndexedDB غير مدعوم في هذا المتصفح.");
+            alert("هذا المتصفح لا يدعم IndexedDB. يرجى استخدام متصفح حديث مثل Chrome أو Firefox.");
+        }
+
+        // التحقق من تحميل المكتبات الخارجية
+        function checkLibraries() {
+            if (typeof Chart === 'undefined') {
+                console.error("فشل تحميل Chart.js. يرجى التحقق من اتصال الإنترنت أو رابط CDN.");
+                alert("فشل تحميل مكتبة Chart.js. بعض الوظائف مثل الإحصائيات قد لا تعمل.");
+            }
+            if (typeof XLSX === 'undefined') {
+                console.error("فشل تحميل XLSX. يرجى التحقق من اتصال الإنترنت أو رابط CDN.");
+                alert("فشل تحميل مكتبة XLSX. وظيفة التصدير إلى Excel قد لا تعمل.");
+            }
+        }
 
         function initDB() {
             return new Promise((resolve, reject) => {
+                if (!window.indexedDB) {
+                    console.warn("IndexedDB غير مدعوم. سيتم استخدام التخزين المؤقت في الذاكرة.");
+                    isDbReady = false;
+                    resolve();
+                    return;
+                }
+
                 const request = indexedDB.open(dbName, dbVersion);
 
                 request.onupgradeneeded = function(event) {
                     db = event.target.result;
-                    if (!db.objectStoreNames.contains('mediaGroups')) {
-                        db.createObjectStore('mediaGroups', { keyPath: 'id', autoIncrement: true });
-                    }
-                    if (!db.objectStoreNames.contains('students')) {
-                        db.createObjectStore('students', { keyPath: 'id', autoIncrement: true });
-                    }
-                    if (!db.objectStoreNames.contains('savedStudents')) {
-                        db.createObjectStore('savedStudents', { keyPath: 'id', autoIncrement: true });
-                    }
-                    if (!db.objectStoreNames.contains('participation')) {
-                        db.createObjectStore('participation', { keyPath: 'id', autoIncrement: true });
+                    try {
+                        if (!db.objectStoreNames.contains('mediaGroups')) {
+                            db.createObjectStore('mediaGroups', { keyPath: 'id', autoIncrement: true });
+                        }
+                        if (!db.objectStoreNames.contains('students')) {
+                            db.createObjectStore('students', { keyPath: 'id', autoIncrement: true });
+                        }
+                        if (!db.objectStoreNames.contains('savedStudents')) {
+                            db.createObjectStore('savedStudents', { keyPath: 'id', autoIncrement: true });
+                        }
+                        if (!db.objectStoreNames.contains('participation')) {
+                            db.createObjectStore('participation', { keyPath: 'id', autoIncrement: true });
+                        }
+                    } catch (error) {
+                        console.error("Error creating object stores:", error);
+                        reject(error);
                     }
                 };
 
                 request.onsuccess = function(event) {
                     db = event.target.result;
+                    isDbReady = true;
+                    console.log("IndexedDB تم تهيئتها بنجاح.");
                     resolve();
                 };
 
                 request.onerror = function(event) {
                     console.error("Error opening IndexedDB:", event.target.error);
+                    isDbReady = false;
                     reject(event.target.error);
+                };
+
+                request.onblocked = function(event) {
+                    console.error("IndexedDB blocked. Please close other tabs using the same database.");
+                    isDbReady = false;
+                    reject(new Error("IndexedDB blocked"));
                 };
             });
         }
 
         window.onload = async function() {
             try {
+                // التحقق من المكتبات الخارجية
+                checkLibraries();
+
+                // تهيئة قاعدة البيانات
                 await initDB();
+
+                // تحميل البيانات
                 await loadAllData();
+
+                // عرض الجدول
                 renderKashfTable();
                 openTab({ currentTarget: document.querySelector('.tablinks.kashf-tab') }, 'kashf');
             } catch (error) {
                 console.error("Error during initialization:", error);
-                alert("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.");
+                alert("حدث خطأ أثناء تحميل البيانات: " + error.message + ". يمكنك الاستمرار في استخدام الصفحة، لكن بعض البيانات قد لا تكون محفوظة.");
+                // عرض الجدول حتى لو فشل تحميل البيانات
+                renderKashfTable();
+                openTab({ currentTarget: document.querySelector('.tablinks.kashf-tab') }, 'kashf');
             }
         };
 
         async function loadAllData() {
-            await loadKashfData();
-            await loadSavedData();
-            await loadParticipationData();
-            await loadMediaData();
+            if (!isDbReady) {
+                console.warn("IndexedDB غير متاح. سيتم استخدام البيانات الافتراضية.");
+                return;
+            }
+            try {
+                await loadKashfData();
+                await loadSavedData();
+                await loadParticipationData();
+                await loadMediaData();
+            } catch (error) {
+                console.error("Error loading all data:", error);
+                throw error;
+            }
         }
 
         async function loadKashfData() {
+            if (!isDbReady) return;
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(['students'], 'readonly');
                 const objectStore = transaction.objectStore('students');
@@ -703,6 +763,7 @@
         }
 
         async function saveKashfData() {
+            if (!isDbReady) return;
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(['students'], 'readwrite');
                 const objectStore = transaction.objectStore('students');
@@ -721,6 +782,7 @@
         }
 
         async function loadSavedData() {
+            if (!isDbReady) return;
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(['savedStudents'], 'readonly');
                 const objectStore = transaction.objectStore('savedStudents');
@@ -738,6 +800,7 @@
         }
 
         async function saveSavedData() {
+            if (!isDbReady) return;
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(['savedStudents'], 'readwrite');
                 const objectStore = transaction.objectStore('savedStudents');
@@ -756,6 +819,7 @@
         }
 
         async function loadParticipationData() {
+            if (!isDbReady) return;
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(['participation'], 'readonly');
                 const objectStore = transaction.objectStore('participation');
@@ -775,6 +839,7 @@
         }
 
         async function saveParticipationData() {
+            if (!isDbReady) return;
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(['participation'], 'readwrite');
                 const objectStore = transaction.objectStore('participation');
@@ -793,6 +858,7 @@
         }
 
         async function loadMediaData() {
+            if (!isDbReady) return;
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(['mediaGroups'], 'readonly');
                 const objectStore = transaction.objectStore('mediaGroups');
@@ -811,6 +877,7 @@
         }
 
         async function saveMediaData() {
+            if (!isDbReady) return;
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(['mediaGroups'], 'readwrite');
                 const objectStore = transaction.objectStore('mediaGroups');
@@ -855,6 +922,7 @@
                 }
             } catch (error) {
                 console.error(`Error in tab "${tabName}":`, error);
+                alert("حدث خطأ في علامة التبويب: " + error.message);
             }
         }
 
@@ -1234,6 +1302,10 @@
         }
 
         function exportToExcel() {
+            if (typeof XLSX === 'undefined') {
+                alert("مكتبة XLSX غير متوفرة. يرجى التحقق من اتصال الإنترنت.");
+                return;
+            }
             const table = document.getElementById('savedTable');
             const ws = XLSX.utils.table_to_sheet(table);
             const wb = XLSX.utils.book_new();
@@ -1242,6 +1314,10 @@
         }
 
         function exportParticipationToExcel() {
+            if (typeof XLSX === 'undefined') {
+                alert("مكتبة XLSX غير متوفرة. يرجى التحقق من اتصال الإنترنت.");
+                return;
+            }
             const table = document.getElementById('participationTable');
             const ws = XLSX.utils.table_to_sheet(table);
             const wb = XLSX.utils.book_new();
@@ -1360,6 +1436,11 @@
 
             if (statsChart) {
                 statsChart.destroy();
+            }
+
+            if (typeof Chart === 'undefined') {
+                console.error("Chart.js غير متوفر. لا يمكن عرض الإحصائيات.");
+                return;
             }
 
             const ctx = document.getElementById('statsChart').getContext('2d');
@@ -1536,15 +1617,19 @@
                                 renderMediaItems();
                             }
                         };
+                        let mediaContent = '';
                         if (item.type === 'image') {
-                            mediaItem.innerHTML = `<img src="${item.src}" onclick="openFullscreen('${item.src}', ${index}, '${grade}')">`;
+                            mediaContent = `<img src="${item.src}" onclick="openFullscreen('${item.src}', ${index}, '${grade}')">`;
                         } else if (item.type === 'video') {
-                            mediaItem.innerHTML = `<video controls><source src="${item.src}" type="video/mp4">Your browser does not support the video tag.</video>`;
+                            mediaContent = `<video controls><source src="${item.src}" type="video/mp4">Your browser does not support the video tag.</video>`;
                         } else if (item.type === 'pdf') {
-                            mediaItem.innerHTML = `<embed src="${item.src}">`;
+                            mediaContent = `<embed src="${item.src}">`;
                         }
-                        mediaItem.innerHTML += `<textarea placeholder="ملاحظات" onchange="updateMediaNotes('${grade}', ${index}, this.value)">${item.notes}</textarea>`;
-                        mediaItem.innerHTML += `<button class="delete-btn" onclick="deleteMedia('${grade}', ${index})">حذف</button>`;
+                        mediaItem.innerHTML = `
+                            ${mediaContent}
+                            <textarea placeholder="ملاحظات" onchange="updateMediaNotes('${grade}', ${index}, this.value)">${item.notes || ''}</textarea>
+                            <button class="delete-btn" onclick="deleteMediaItem('${grade}', ${index})">حذف</button>
+                        `;
                         mediaColumn.appendChild(mediaItem);
                     });
                     group.appendChild(mediaColumn);
@@ -1558,7 +1643,7 @@
             saveMediaData();
         }
 
-        function deleteMedia(grade, index) {
+        function deleteMediaItem(grade, index) {
             mediaGroups[grade].splice(index, 1);
             saveMediaData();
             renderMediaItems();
@@ -1566,22 +1651,22 @@
 
         function openFullscreen(src, index, grade) {
             const overlay = document.getElementById('fullscreenOverlay');
-            const image = document.getElementById('fullscreenImage');
+            const fullscreenImage = document.getElementById('fullscreenImage');
             imageSources = mediaGroups[grade].filter(item => item.type === 'image').map(item => item.src);
             currentImageIndex = imageSources.indexOf(src);
-            currentGrade = grade;
-            image.src = src;
+            fullscreenImage.src = src;
             overlay.style.display = 'flex';
         }
 
         function closeFullscreen() {
-            document.getElementById('fullscreenOverlay').style.display = 'none';
+            const overlay = document.getElementById('fullscreenOverlay');
+            overlay.style.display = 'none';
         }
 
         function navigateImages(direction) {
             currentImageIndex += direction;
-            if (currentImageIndex < 0) currentImageIndex = imageSources.length - 1;
             if (currentImageIndex >= imageSources.length) currentImageIndex = 0;
+            if (currentImageIndex < 0) currentImageIndex = imageSources.length - 1;
             document.getElementById('fullscreenImage').src = imageSources[currentImageIndex];
         }
 
@@ -1589,12 +1674,6 @@
             historyStack.push(JSON.stringify({ students, savedStudents, participationData, mediaGroups }));
             if (historyStack.length > 10) historyStack.shift();
         }
-
-        // إضافة التحقق من الأخطاء الشائعة
-        window.onerror = function(message, source, lineno, colno, error) {
-            console.error('Error:', message, 'at line:', lineno, 'column:', colno, 'error:', error);
-            alert('حدث خطأ: ' + message + '. يرجى التحقق من وحدة التحكم للتفاصيل.');
-        };
     </script>
 </body>
 </html>
