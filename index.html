@@ -117,6 +117,8 @@
         .toggle-btn:hover { background-color: #F57C00; }
         .save-btn { background-color: #673AB7; }
         .save-btn:hover { background-color: #5E35B1; }
+        .save-all-btn { background-color: #3F51B5; }
+        .save-all-btn:hover { background-color: #303F9F; }
         .export-btn { background-color: #28a745; }
         .export-btn:hover { background-color: #218838; }
         .whatsapp-btn { background-color: #25D366; }
@@ -354,6 +356,20 @@
             flex-direction: column;
             gap: 20px;
         }
+        .batch-checkbox-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .batch-checkbox-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .batch-checkbox-group label {
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -376,6 +392,7 @@
                 <input type="text" id="studentName" placeholder="اسم الطالب" onkeypress="if(event.key === 'Enter') addStudent()">
                 <button onclick="addStudent()">إضافة طالب</button>
                 <button class="delete-all-btn" onclick="deleteAllKashfRows()">حذف الكل</button>
+                <button class="save-all-btn" onclick="saveAllStudents()">حفظ الكل</button>
             </div>
             <div class="control-section">
                 <div id="multipleStudentsContainer" style="display: block;">
@@ -383,6 +400,18 @@
                     <button onclick="addMultipleStudents()">إضافة الطلاب دفعة واحدة</button>
                 </div>
                 <button class="toggle-btn" onclick="toggleMultipleStudentsInput()">إخفاء الحقل</button>
+            </div>
+            <div class="batch-checkbox-section">
+                <div class="batch-checkbox-group">
+                    <label><input type="checkbox" id="batchGrade1" onchange="updateBatchGrade(this, 'الأول متوسط')"> الأول متوسط</label>
+                    <label><input type="checkbox" id="batchGrade2" onchange="updateBatchGrade(this, 'الثاني متوسط')"> الثاني متوسط</label>
+                    <label><input type="checkbox" id="batchGrade3" onchange="updateBatchGrade(this, 'الثالث متوسط')"> الثالث متوسط</label>
+                </div>
+                <div class="batch-checkbox-group">
+                    <label><input type="checkbox" id="batchSection1" onchange="updateBatchSection(this, '1')"> 1</label>
+                    <label><input type="checkbox" id="batchSection2" onchange="updateBatchSection(this, '2')"> 2</label>
+                    <label><input type="checkbox" id="batchSection3" onchange="updateBatchSection(this, '3')"> 3</label>
+                </div>
             </div>
             <div class="filter-section">
                 <button class="filter-btn" onclick="filterKashfTable()">تصفية</button>
@@ -558,8 +587,8 @@
         let students = [];
         let savedStudents = [];
         let participationData = {};
-        let mediaGroups = []; // Array of groups (each group is an array of media items)
-        let videoItems = []; // Separate array for videos and YouTube links
+        let mediaGroups = [];
+        let videoItems = [];
         let pdfItems = [];
         let statsChart = null;
         let currentTab = 'kashf';
@@ -567,8 +596,9 @@
         let currentImageIndex = -1;
         let imageSources = [];
         let currentGroupIndex = -1;
+        let batchGrade = '';
+        let batchSection = '';
 
-        // Initialize IndexedDB
         let db;
         const dbName = "KashfDB";
         const dbVersion = 1;
@@ -662,6 +692,38 @@
             }
         }
 
+        function updateBatchGrade(checkbox, grade) {
+            const grades = ['الأول متوسط', 'الثاني متوسط', 'الثالث متوسط'];
+            const gradeCheckboxes = ['batchGrade1', 'batchGrade2', 'batchGrade3'];
+            
+            if (checkbox.checked) {
+                batchGrade = grade;
+                gradeCheckboxes.forEach((id, index) => {
+                    if (grades[index] !== grade) {
+                        document.getElementById(id).checked = false;
+                    }
+                });
+            } else {
+                batchGrade = '';
+            }
+        }
+
+        function updateBatchSection(checkbox, section) {
+            const sections = ['1', '2', '3'];
+            const sectionCheckboxes = ['batchSection1', 'batchSection2', 'batchSection3'];
+            
+            if (checkbox.checked) {
+                batchSection = section;
+                sectionCheckboxes.forEach((id, index) => {
+                    if (sections[index] !== section) {
+                        document.getElementById(id).checked = false;
+                    }
+                });
+            } else {
+                batchSection = '';
+            }
+        }
+
         function addStudent() {
             const studentName = document.getElementById('studentName').value.trim();
             if (!studentName) {
@@ -670,8 +732,8 @@
             }
             const student = {
                 name: studentName,
-                grade: '',
-                section: '',
+                grade: batchGrade,
+                section: batchSection,
                 behavior: '',
                 score: 20
             };
@@ -696,8 +758,8 @@
             studentNames.forEach(name => {
                 const student = {
                     name: name,
-                    grade: '',
-                    section: '',
+                    grade: batchGrade,
+                    section: batchSection,
                     behavior: '',
                     score: 20
                 };
@@ -831,6 +893,33 @@
             renderSavedTable();
             saveSavedData();
             saveToHistory();
+        }
+
+        function saveAllStudents() {
+            let allValid = true;
+            students.forEach((student, index) => {
+                if (!student.name) {
+                    alert(`يرجى إدخال اسم الطالب في السطر ${index + 1}`);
+                    allValid = false;
+                } else if (!student.grade) {
+                    alert(`يرجى اختيار الصف للطالب: ${student.name}`);
+                    allValid = false;
+                } else if (!student.section) {
+                    alert(`يرجى اختيار الفصل للطالب: ${student.name}`);
+                    allValid = false;
+                } else if (!student.behavior || student.behavior === '') {
+                    alert(`يرجى اختيار السلوك للطالب: ${student.name}`);
+                    allValid = false;
+                }
+            });
+
+            if (!allValid) return;
+
+            students.forEach((student, index) => {
+                saveStudent(index);
+            });
+
+            alert('تم حفظ جميع الطلاب بنجاح!');
         }
 
         function deleteStudent(index) {
@@ -1206,7 +1295,6 @@
             const imageFiles = [];
             const videoFiles = [];
 
-            // Separate images and videos
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 if (file.type.startsWith('image')) {
@@ -1216,7 +1304,6 @@
                 }
             }
 
-            // Handle images (add as a new group)
             if (imageFiles.length > 0) {
                 const newImageGroup = [];
                 for (const file of imageFiles) {
@@ -1233,7 +1320,6 @@
                 saveToHistory();
             }
 
-            // Handle videos (add individually to videoItems)
             if (videoFiles.length > 0) {
                 for (const file of videoFiles) {
                     const videoItem = {
@@ -1264,12 +1350,10 @@
             };
 
             if (mediaItem.type === 'image') {
-                // Add as a new group with a single image
                 mediaGroups.push([mediaItem]);
                 await saveMediaData();
                 renderMediaItems();
             } else {
-                // Add to video items
                 videoItems.push(mediaItem);
                 await saveVideoData();
                 renderVideoItems();
@@ -1284,7 +1368,7 @@
             container.innerHTML = '';
 
             mediaGroups.forEach((group, groupIndex) => {
-                if (group.length === 0) return; // Skip empty groups
+                if (group.length === 0) return;
 
                 const column = document.createElement('div');
                 column.className = 'media-column';
@@ -1519,11 +1603,11 @@
             localStorage.setItem('students', JSON.stringify(students));
         }
 
-        async function loadKashfData() {
+        function loadKashfData() {
             const data = localStorage.getItem('students');
             if (data) {
                 students = JSON.parse(data);
-                renderKashfTable();
+                students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
             }
         }
 
@@ -1531,11 +1615,10 @@
             localStorage.setItem('savedStudents', JSON.stringify(savedStudents));
         }
 
-        async function loadSavedData() {
+        function loadSavedData() {
             const data = localStorage.getItem('savedStudents');
             if (data) {
                 savedStudents = JSON.parse(data);
-                renderSavedTable();
             }
         }
 
@@ -1543,52 +1626,30 @@
             localStorage.setItem('participationData', JSON.stringify(participationData));
         }
 
-        async function loadParticipationData() {
+        function loadParticipationData() {
             const data = localStorage.getItem('participationData');
             if (data) {
                 participationData = JSON.parse(data);
-                updateParticipationTable();
             }
         }
 
         async function saveMediaData() {
             const transaction = db.transaction(['mediaGroups'], 'readwrite');
             const store = transaction.objectStore('mediaGroups');
-            // Clear existing data
-            await new Promise((resolve, reject) => {
-                const request = store.clear();
-                request.onsuccess = resolve;
-                request.onerror = () => reject(request.error);
+            await store.clear();
+            mediaGroups.forEach((group, index) => {
+                store.add({ id: index + 1, data: group });
             });
-            // Save new data
-            for (const group of mediaGroups) {
-                const groupData = group.map(item => ({
-                    blob: item.blob || null,
-                    src: item.src || null,
-                    type: item.type,
-                    description: item.description
-                }));
-                await new Promise((resolve, reject) => {
-                    const request = store.add({ group: groupData });
-                    request.onsuccess = resolve;
-                    request.onerror = () => reject(request.error);
-                });
-            }
         }
 
         async function loadMediaData() {
             const transaction = db.transaction(['mediaGroups'], 'readonly');
             const store = transaction.objectStore('mediaGroups');
             const request = store.getAll();
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 request.onsuccess = function() {
-                    mediaGroups = request.result.map(item => item.group);
-                    renderMediaItems();
+                    mediaGroups = request.result.map(item => item.data);
                     resolve();
-                };
-                request.onerror = function() {
-                    console.error("Error loading media data:", request.error);
-                    reject(request.error);
                 };
             });
         }
@@ -1596,96 +1657,73 @@
         async function saveVideoData() {
             const transaction = db.transaction(['videoItems'], 'readwrite');
             const store = transaction.objectStore('videoItems');
-            // Clear existing data
-            await new Promise((resolve, reject) => {
-                const request = store.clear();
-                request.onsuccess = resolve;
-                request.onerror = () => reject(request.error);
+            await store.clear();
+            videoItems.forEach((item, index) => {
+                store.add({ id: index + 1, data: item });
             });
-            // Save new data
-            for (const item of videoItems) {
-                const videoData = {
-                    blob: item.blob || null,
-                    src: item.src || null,
-                    type: item.type,
-                    description: item.description
-                };
-                await new Promise((resolve, reject) => {
-                    const request = store.add(videoData);
-                    request.onsuccess = resolve;
-                    request.onerror = () => reject(request.error);
-                });
-            }
         }
 
         async function loadVideoData() {
             const transaction = db.transaction(['videoItems'], 'readonly');
             const store = transaction.objectStore('videoItems');
             const request = store.getAll();
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 request.onsuccess = function() {
-                    videoItems = request.result;
-                    renderVideoItems();
+                    videoItems = request.result.map(item => item.data);
                     resolve();
-                };
-                request.onerror = function() {
-                    console.error("Error loading video data:", request.error);
-                    reject(request.error);
                 };
             });
         }
 
-        function savePDFData() {
-            localStorage.setItem('pdfItems', JSON.stringify(pdfItems.map(item => ({
-                src: item.src || null,
-                blob: item.blob || null,
-                description: item.description
-            }))));
+        async function savePDFData() {
+            localStorage.setItem('pdfItems', JSON.stringify(pdfItems));
         }
 
         async function loadPDFData() {
             const data = localStorage.getItem('pdfItems');
             if (data) {
                 pdfItems = JSON.parse(data);
-                renderPDFItems();
             }
         }
 
         function saveToHistory() {
-            const state = {
+            historyStack.push({
                 students: JSON.parse(JSON.stringify(students)),
                 savedStudents: JSON.parse(JSON.stringify(savedStudents)),
                 participationData: JSON.parse(JSON.stringify(participationData)),
-                // Note: mediaGroups and videoItems are not included in history due to size
+                mediaGroups: JSON.parse(JSON.stringify(mediaGroups)),
+                videoItems: JSON.parse(JSON.stringify(videoItems)),
                 pdfItems: JSON.parse(JSON.stringify(pdfItems))
-            };
-            historyStack.push(state);
-            if (historyStack.length > 10) {
+            });
+            if (historyStack.length > 50) {
                 historyStack.shift();
             }
         }
 
         function setupPDFDragAndDrop() {
-            const items = document.querySelectorAll('.pdf-item');
+            const container = document.getElementById('pdfContainer');
+            const items = container.querySelectorAll('.pdf-item');
+
             items.forEach(item => {
-                item.addEventListener('dragstart', () => item.classList.add('dragging'));
+                item.addEventListener('dragstart', () => {
+                    item.classList.add('dragging');
+                });
+
                 item.addEventListener('dragend', () => {
                     item.classList.remove('dragging');
-                    const newOrder = Array.from(document.querySelectorAll('.pdf-item')).map(i => {
-                        const src = i.querySelector('embed').src;
-                        const index = pdfItems.findIndex(p => (p.src && p.src === src) || (p.blob && URL.createObjectURL(p.blob) === src));
-                        return pdfItems[index];
+                    const newOrder = Array.from(container.querySelectorAll('.pdf-item')).map((el, index) => {
+                        return pdfItems[parseInt(el.querySelector('textarea').getAttribute('onchange').match(/\d+/)[0])];
                     });
                     pdfItems = newOrder;
                     savePDFData();
                     saveToHistory();
                 });
             });
-            const container = document.getElementById('pdfContainer');
+
             container.addEventListener('dragover', e => {
                 e.preventDefault();
-                const afterElement = getDragAfterElement(container, e.clientY, '.pdf-item');
-                const dragging = document.querySelector('.pdf-item.dragging');
+                const afterElement = getDragAfterElement(container, e.clientY);
+                const dragging = document.querySelector('.dragging');
                 if (afterElement == null) {
                     container.appendChild(dragging);
                 } else {
@@ -1694,8 +1732,8 @@
             });
         }
 
-        function getDragAfterElement(container, y, selector) {
-            const draggableElements = [...container.querySelectorAll(selector + ':not(.dragging)')];
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.pdf-item:not(.dragging)')];
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
