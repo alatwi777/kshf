@@ -212,7 +212,7 @@
             border-radius: 4px;
             background-color: #f9f9f9;
         }
-        .media-item img, .media-item video, .media-item iframe {
+        .media-item img, .media-item video, .media-item iframe, .media-item audio {
             max-width: 200px;
             max-height: 200px;
             border-radius: 4px;
@@ -223,12 +223,12 @@
             height: 60px;
             resize: vertical;
         }
-        .pdf-item a {
+        .pdf-item a, .media-item a {
             color: #2196F3;
             text-decoration: none;
             font-weight: bold;
         }
-        .pdf-item a:hover {
+        .pdf-item a:hover, .media-item a:hover {
             text-decoration: underline;
         }
         .pdf-item embed {
@@ -331,7 +331,7 @@
             border-radius: 8px;
             cursor: pointer;
         }
-        .media-slide video, .media-slide iframe {
+        .media-slide video, .media-slide iframe, .media-slide audio {
             max-width: 100%;
             max-height: 400px;
             border-radius: 8px;
@@ -362,16 +362,6 @@
         }
         .media-slide-controls .nav-btn:hover {
             background: #0b7dda;
-        }
-        .media-item.video-item img, .media-item.video-item video, .media-item.video-item iframe {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 4px;
-        }
-        .video-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
         }
         .batch-checkbox-section {
             display: flex;
@@ -410,9 +400,8 @@
             font-size: 16px;
         }
         .behavior-entry {
- potente: margin-bottom: 5px;
+            margin-bottom: 5px;
         }
-        /* Kashf Table Column Widths */
         col.move { width: 5%; }
         col.student-name { width: 20%; }
         col.grade { width: 20%; }
@@ -423,7 +412,6 @@
         col.delete { width: 5%; }
         col.participation-score { width: 5%; }
         col.homework-score { width: 5%; }
-        /* Saved Table Column Widths */
         col.saved-student-name { width: 20%; }
         col.saved-grade { width: 15%; }
         col.saved-section { width: 8%; }
@@ -436,7 +424,6 @@
 <body>
     <div class="container">
         <h2>كشف المتابعة اليومي</h2>
-
         <div class="tab">
             <button class="tablinks kashf-tab active" onclick="openTab(event, 'kashf')">الكشف</button>
             <button class="tablinks input-table-tab" onclick="openTab(event, 'inputTable')">جدول الإدخال</button>
@@ -445,7 +432,6 @@
             <button class="tablinks send-tab" onclick="openTab(event, 'send')">إرسال</button>
             <button class="tablinks media-tab" onclick="openTab(event, 'media')">الوسائط</button>
         </div>
-
         <div id="kashf" class="tabcontent" style="display: block;">
             <div class="control-section">
                 <input type="text" id="studentName" placeholder="اسم الطالب" onkeypress="if(event.key === 'Enter') addStudent()">
@@ -518,7 +504,6 @@
                 لا توجد أسماء تتطابق مع التصفية. حاول تغيير الصف أو الفصل.
             </div>
         </div>
-
         <div id="inputTable" class="tabcontent">
             <div class="filter-section">
                 <button class="filter-btn" onclick="filterSavedTable()">تصفية حسب الصف</button>
@@ -554,7 +539,6 @@
                 <tbody id="savedTableBody"></tbody>
             </table>
         </div>
-
         <div id="stats" class="tabcontent">
             <div class="control-section">
                 <select id="statsGrade" onchange="updateStatsSections(); updateStatsChart()">
@@ -569,11 +553,9 @@
             </div>
             <canvas id="statsChart"></canvas>
         </div>
-
         <div id="books" class="tabcontent">
             <iframe id="booksIframe" src="https://ktby.net" title="الكتب الدراسية"></iframe>
         </div>
-
         <div id="send" class="tabcontent">
             <div class="control-section">
                 <select id="sendGrade" onchange="updateSendSections()">
@@ -606,15 +588,14 @@
                 <button class="whatsapp-btn" onclick="sendToWhatsApp()">إرسال عبر واتساب</button>
             </div>
         </div>
-
         <div id="media" class="tabcontent">
             <div class="grade-upload-section">
                 <button class="upload-btn" onclick="document.getElementById('mediaUploadGrade1').click()">رفع للصف الأول متوسط</button>
-                <input type="file" id="mediaUploadGrade1" accept="image/*,video/*,application/pdf" multiple style="display: none;" onchange="handleMediaUpload(event, 'الأول متوسط')">
+                <input type="file" id="mediaUploadGrade1" accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip" multiple style="display: none;" onchange="handleMediaUpload(event, 'الأول متوسط')">
                 <button class="upload-btn" onclick="document.getElementById('mediaUploadGrade2').click()">رفع للصف الثاني متوسط</button>
-                <input type="file" id="mediaUploadGrade2" accept="image/*,video/*,application/pdf" multiple style="display: none;" onchange="handleMediaUpload(event, 'الثاني متوسط')">
+                <input type="file" id="mediaUploadGrade2" accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip" multiple style="display: none;" onchange="handleMediaUpload(event, 'الثاني متوسط')">
                 <button class="upload-btn" onclick="document.getElementById('mediaUploadGrade3').click()">رفع للصف الثالث متوسط</button>
-                <input type="file" id="mediaUploadGrade3" accept="image/*,video/*,application/pdf" multiple style="display: none;" onchange="handleMediaUpload(event, 'الثالث متوسط')">
+                <input type="file" id="mediaUploadGrade3" accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip" multiple style="display: none;" onchange="handleMediaUpload(event, 'الثالث متوسط')">
             </div>
             <div class="control-section">
                 <input type="text" id="mediaLink" placeholder="أدخل رابط الصورة، الفيديو، أو ملف PDF">
@@ -628,7 +609,6 @@
             </div>
             <div id="mediaContainer"></div>
         </div>
-
         <div id="fullscreenOverlay" class="fullscreen-overlay">
             <img id="fullscreenImage" src="" alt="صورة مكبرة">
             <button class="close-btn" onclick="closeFullscreen()">إغلاق</button>
@@ -636,7 +616,6 @@
             <button class="nav-btn next-btn" onclick="navigateImages(1)">❯</button>
         </div>
     </div>
-
     <script>
         let students = [];
         let savedStudents = [];
@@ -650,34 +629,46 @@
         let currentGrade = '';
         let batchGrade = '';
         let batchSection = '';
-
         let db;
         const dbName = "KashfDB";
         const dbVersion = 1;
-
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+        async function autoSave() {
+            try {
+                saveKashfData();
+                saveSavedData();
+                await saveMediaData();
+                console.log('تم الحفظ التلقائي بنجاح');
+            } catch (error) {
+                console.error('خطأ في الحفظ التلقائي:', error);
+            }
+        }
+        const debouncedAutoSave = debounce(autoSave, 1000);
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(dbName, dbVersion);
-
                 request.onupgradeneeded = function(event) {
                     db = event.target.result;
                     if (!db.objectStoreNames.contains('mediaGroups')) {
                         db.createObjectStore('mediaGroups', { keyPath: 'id', autoIncrement: true });
                     }
                 };
-
                 request.onsuccess = function(event) {
                     db = event.target.result;
                     resolve();
                 };
-
                 request.onerror = function(event) {
                     console.error("Error opening IndexedDB:", event.target.error);
                     reject(event.target.error);
                 };
             });
         }
-
         window.onload = async function() {
             try {
                 await initDB();
@@ -689,13 +680,79 @@
                 alert("حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.");
             }
         };
-
         async function loadAllData() {
             await loadKashfData();
             await loadSavedData();
             await loadMediaData();
         }
-
+        function saveKashfData() {
+            localStorage.setItem('students', JSON.stringify(students));
+        }
+        function loadKashfData() {
+            const data = localStorage.getItem('students');
+            if (data) {
+                students = JSON.parse(data);
+                students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+            }
+        }
+        function saveSavedData() {
+            localStorage.setItem('savedStudents', JSON.stringify(savedStudents));
+        }
+        function loadSavedData() {
+            const data = localStorage.getItem('savedStudents');
+            if (data) {
+                savedStudents = JSON.parse(data);
+                savedStudents.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+            }
+        }
+        async function saveMediaData() {
+            const transaction = db.transaction(['mediaGroups'], 'readwrite');
+            const store = transaction.objectStore('mediaGroups');
+            await store.clear();
+            let id = 1;
+            const chunkSize = 5 * 1024 * 1024;
+            for (const grade in mediaGroups) {
+                for (const group of mediaGroups[grade]) {
+                    const chunkedGroup = [];
+                    for (const item of group) {
+                        if (item.blob && item.blob.size > chunkSize) {
+                            const chunks = [];
+                            for (let start = 0; start < item.blob.size; start += chunkSize) {
+                                const chunk = item.blob.slice(start, start + chunkSize);
+                                chunks.push(chunk);
+                            }
+                            chunkedGroup.push({ ...item, chunks, blob: null });
+                        } else {
+                            chunkedGroup.push(item);
+                        }
+                    }
+                    store.add({ id: id++, grade: grade, data: chunkedGroup });
+                }
+            }
+        }
+        async function loadMediaData() {
+            const transaction = db.transaction(['mediaGroups'], 'readonly');
+            const store = transaction.objectStore('mediaGroups');
+            const request = store.getAll();
+            return new Promise((resolve) => {
+                request.onsuccess = function() {
+                    mediaGroups = { 'الأول متوسط': [], 'الثاني متوسط': [], 'الثالث متوسط': [] };
+                    request.result.forEach(item => {
+                        if (mediaGroups[item.grade]) {
+                            const group = item.data.map(groupItem => {
+                                if (groupItem.chunks) {
+                                    const blob = new Blob(groupItem.chunks);
+                                    return { ...groupItem, blob, chunks: null };
+                                }
+                                return groupItem;
+                            });
+                            mediaGroups[item.grade].push(group);
+                        }
+                    });
+                    resolve();
+                };
+            });
+        }
         function openTab(evt, tabName) {
             const tabcontent = document.getElementsByClassName("tabcontent");
             for (let i = 0; i < tabcontent.length; i++) {
@@ -725,11 +782,9 @@
                 console.error(`Error in tab "${tabName}":`, error);
             }
         }
-
         function updateBatchGrade(checkbox, grade) {
             const grades = ['الأول متوسط', 'الثاني متوسط', 'الثالث متوسط'];
             const gradeCheckboxes = ['batchGrade1', 'batchGrade2', 'batchGrade3'];
-            
             if (checkbox.checked) {
                 batchGrade = grade;
                 gradeCheckboxes.forEach((id, index) => {
@@ -741,11 +796,9 @@
                 batchGrade = '';
             }
         }
-
         function updateBatchSection(checkbox, section) {
             const sections = ['1', '2', '3'];
             const sectionCheckboxes = ['batchSection1', 'batchSection2', 'batchSection3'];
-            
             if (checkbox.checked) {
                 batchSection = section;
                 sectionCheckboxes.forEach((id, index) => {
@@ -757,7 +810,6 @@
                 batchSection = '';
             }
         }
-
         function addStudent() {
             const studentName = document.getElementById('studentName').value.trim();
             if (!studentName) {
@@ -777,12 +829,11 @@
             students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
             renderKashfTable();
             document.getElementById('studentName').value = '';
-            saveKashfData();
+            debouncedAutoSave();
             saveToHistory();
             updateSendSections();
             updateFilteredStudentList();
         }
-
         function addMultipleStudents() {
             const multipleStudentsInput = document.getElementById('multipleStudents').value.trim();
             if (!multipleStudentsInput) {
@@ -805,25 +856,22 @@
             students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
             renderKashfTable();
             document.getElementById('multipleStudents').value = '';
-            saveKashfData();
+            debouncedAutoSave();
             saveToHistory();
             updateSendSections();
             updateFilteredStudentList();
         }
-
         function toggleMultipleStudentsInput() {
             const container = document.getElementById('multipleStudentsContainer');
             const toggleButton = document.querySelector('.toggle-btn');
             container.style.display = container.style.display === 'block' ? 'none' : 'block';
             toggleButton.textContent = container.style.display === 'block' ? 'إخفاء الحقل' : 'إظهار الحقل';
         }
-
         function renderKashfTable() {
             const tableBody = document.getElementById('tableBody');
             tableBody.innerHTML = '';
             const noStudentsMessage = document.getElementById('noStudentsMessage');
             noStudentsMessage.style.display = 'none';
-
             students.forEach((student, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -863,47 +911,43 @@
                     <td><button class="delete-btn" onclick="deleteStudent(${index})">حذف</button></td>
                     <td>
                         <div class="score-control">
-                            <button class="increment-btn" onclick="incrementScore(${index}, 'participationScore')">↑</button>
+                            <button class="increment-btn" onclick="incrementScore(${index}, 'participationScore')">+</button>
                             <span>${student.participationScore}</span>
-                            <button class="decrement-btn" onclick="decrementScore(${index}, 'participationScore')">↓</button>
+                            <button class="decrement-btn" onclick="decrementScore(${index}, 'participationScore')">-</button>
                         </div>
                     </td>
                     <td>
                         <div class="score-control">
-                            <button class="increment-btn" onclick="incrementScore(${index}, 'homeworkScore')">↑</button>
+                            <button class="increment-btn" onclick="incrementScore(${index}, 'homeworkScore')">+</button>
                             <span>${student.homeworkScore}</span>
-                            <button class="decrement-btn" onclick="decrementScore(${index}, 'homeworkScore')">↓</button>
+                            <button class="decrement-btn" onclick="decrementScore(${index}, 'homeworkScore')">-</button>
                         </div>
                     </td>
                 `;
                 tableBody.appendChild(row);
             });
-
             if (students.length === 0) {
                 noStudentsMessage.style.display = 'block';
                 noStudentsMessage.textContent = 'لا توجد أسماء لعرضها. أضف طلابًا جدد.';
             }
             updateKashfSections();
         }
-
         function moveRowUp(index) {
             if (index > 0) {
                 [students[index], students[index - 1]] = [students[index - 1], students[index]];
                 renderKashfTable();
-                saveKashfData();
+                debouncedAutoSave();
                 saveToHistory();
             }
         }
-
         function moveRowDown(index) {
             if (index < students.length - 1) {
                 [students[index], students[index + 1]] = [students[index + 1], students[index]];
                 renderKashfTable();
-                saveKashfData();
+                debouncedAutoSave();
                 saveToHistory();
             }
         }
-
         function updateStudent(index, field, value) {
             if (field === 'grade' || field === 'section') {
                 const checkboxes = document.getElementsByName(`${field}_${index}`);
@@ -916,12 +960,11 @@
             }
             students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
             renderKashfTable();
-            saveKashfData();
+            debouncedAutoSave();
             saveToHistory();
             updateSendSections();
             updateFilteredStudentList();
         }
-
         function updateBehavior(index, behavior) {
             students[index].behavior = behavior;
             if (behavior === 'رجوع') {
@@ -930,30 +973,27 @@
                 students[index].score = Math.max(0, students[index].score - 2);
             }
             renderKashfTable();
-            saveKashfData();
+            debouncedAutoSave();
             saveToHistory();
         }
-
         function incrementScore(index, field) {
             const currentScore = students[index][field];
             if (currentScore < 10) {
                 students[index][field] = currentScore + 1;
-                renderKashfTable();
-                saveKashfData();
+                filterKashfTable();
+                debouncedAutoSave();
                 saveToHistory();
             }
         }
-
         function decrementScore(index, field) {
             const currentScore = students[index][field];
             if (currentScore > 0) {
                 students[index][field] = currentScore - 1;
-                renderKashfTable();
-                saveKashfData();
+                filterKashfTable();
+                debouncedAutoSave();
                 saveToHistory();
             }
         }
-
         function saveStudent(index) {
             const student = { ...students[index] };
             const today = new Date();
@@ -965,9 +1005,7 @@
                 date: today.toLocaleDateString('ar-EG'),
                 day: today.toLocaleDateString('ar-EG', { weekday: 'long' })
             };
-
             let existingStudent = savedStudents.find(s => s.name === student.name && s.grade === student.grade && s.section === student.section);
-
             if (existingStudent) {
                 existingStudent.behaviors.push(newEntry);
                 existingStudent.notes = existingStudent.notes || '';
@@ -981,13 +1019,11 @@
                 };
                 savedStudents.push(existingStudent);
             }
-
             savedStudents.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
             renderSavedTable();
-            saveSavedData();
+            debouncedAutoSave();
             saveToHistory();
         }
-
         function saveAllStudents() {
             let allValid = true;
             students.forEach((student, index) => {
@@ -1005,34 +1041,28 @@
                     allValid = false;
                 }
             });
-
             if (!allValid) return;
-
             students.forEach((student, index) => {
                 saveStudent(index);
             });
-
             alert('تم حفظ جميع الطلاب بنجاح!');
         }
-
         function deleteStudent(index) {
             students.splice(index, 1);
             renderKashfTable();
-            saveKashfData();
+            debouncedAutoSave();
             saveToHistory();
             updateSendSections();
             updateFilteredStudentList();
         }
-
         function deleteAllKashfRows() {
             students = [];
             renderKashfTable();
-            saveKashfData();
+            debouncedAutoSave();
             saveToHistory();
             updateSendSections();
             updateFilteredStudentList();
         }
-
         function updateKashfSections() {
             const gradeFilter = document.getElementById('filterKashfGrade').value;
             const sections = [...new Set(students.filter(s => !gradeFilter || s.grade === gradeFilter).map(s => s.section).filter(s => s))];
@@ -1045,7 +1075,6 @@
                 sectionSelect.appendChild(option);
             });
         }
-
         function filterKashfTable() {
             const gradeFilter = document.getElementById('filterKashfGrade').value;
             const sectionFilter = document.getElementById('filterKashfSection').value;
@@ -1057,7 +1086,6 @@
             tableBody.innerHTML = '';
             const noStudentsMessage = document.getElementById('noStudentsMessage');
             noStudentsMessage.style.display = 'none';
-
             filteredStudents.forEach((student, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1097,30 +1125,27 @@
                     <td><button class="delete-btn" onclick="deleteStudent(${students.indexOf(student)})">حذف</button></td>
                     <td>
                         <div class="score-control">
-                            <button class="increment-btn" onclick="incrementScore(${students.indexOf(student)}, 'participationScore')">↑</button>
+                            <button class="increment-btn" onclick="incrementScore(${students.indexOf(student)}, 'participationScore')">+</button>
                             <span>${student.participationScore}</span>
-                            <button class="decrement-btn" onclick="decrementScore(${students.indexOf(student)}, 'participationScore')">↓</button>
+                            <button class="decrement-btn" onclick="decrementScore(${students.indexOf(student)}, 'participationScore')">-</button>
                         </div>
                     </td>
                     <td>
                         <div class="score-control">
-                            <button class="increment-btn" onclick="incrementScore(${students.indexOf(student)}, 'homeworkScore')">↑</button>
+                            <button class="increment-btn" onclick="incrementScore(${students.indexOf(student)}, 'homeworkScore')">+</button>
                             <span>${student.homeworkScore}</span>
-                            <button class="decrement-btn" onclick="decrementScore(${students.indexOf(student)}, 'homeworkScore')">↓</button>
+                            <button class="decrement-btn" onclick="decrementScore(${students.indexOf(student)}, 'homeworkScore')">-</button>
                         </div>
                     </td>
                 `;
                 tableBody.appendChild(row);
             });
-
             if (filteredStudents.length === 0 && (gradeFilter || sectionFilter)) {
                 noStudentsMessage.style.display = 'block';
                 noStudentsMessage.textContent = 'لا توجد أسماء تتطابق مع التصفية. حاول تغيير الصف أو الفصل.';
             }
         }
-
         function exportKashfToExcel() {
-            // Create a temporary table for export
             const tempTable = document.createElement('table');
             tempTable.innerHTML = `
                 <thead>
@@ -1137,8 +1162,6 @@
                 <tbody></tbody>
             `;
             const tempTableBody = tempTable.querySelector('tbody');
-
-            // Populate the temporary table with filtered data
             students.forEach(student => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1152,14 +1175,11 @@
                 `;
                 tempTableBody.appendChild(row);
             });
-
-            // Export the temporary table to Excel
             const ws = XLSX.utils.table_to_sheet(tempTable);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'كشف المتابعة');
             XLSX.writeFile(wb, 'كشف_المتابعة.xlsx');
         }
-
         function renderSavedTable() {
             const tableBody = document.getElementById('savedTableBody');
             tableBody.innerHTML = '';
@@ -1183,20 +1203,17 @@
                 tableBody.appendChild(row);
             });
         }
-
         function updateSavedStudentNotes(index, notes) {
             savedStudents[index].notes = notes;
-            saveSavedData();
+            debouncedAutoSave();
             saveToHistory();
         }
-
         function deleteSavedStudent(index) {
             savedStudents.splice(index, 1);
             renderSavedTable();
-            saveSavedData();
+            debouncedAutoSave();
             saveToHistory();
         }
-
         function filterSavedTable() {
             const gradeFilter = document.getElementById('filterGrade').value;
             const filteredStudents = savedStudents.filter(student => !gradeFilter || student.grade === gradeFilter);
@@ -1222,7 +1239,6 @@
                 tableBody.appendChild(row);
             });
         }
-
         function exportToExcel() {
             const table = document.getElementById('savedTable');
             const ws = XLSX.utils.table_to_sheet(table);
@@ -1230,7 +1246,6 @@
             XLSX.utils.book_append_sheet(wb, ws, 'كشف المتابعة');
             XLSX.writeFile(wb, 'كشف_المتابعة.xlsx');
         }
-
         function updateStatsChart() {
             const grade = document.getElementById('statsGrade').value;
             const section = document.getElementById('statsSection').value;
@@ -1263,18 +1278,12 @@
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        title: {
-                            display: true,
-                            text: 'إحصائيات السلوك'
-                        }
+                        legend: { position: 'top' },
+                        title: { display: true, text: 'إحصائيات السلوك' }
                     }
                 }
             });
         }
-
         function updateStatsSections() {
             const grade = document.getElementById('statsGrade').value;
             const sections = [...new Set(savedStudents.filter(s => !grade || s.grade === grade).map(s => s.section).filter(s => s))];
@@ -1287,7 +1296,6 @@
                 sectionSelect.appendChild(option);
             });
         }
-
         function updateSendSections() {
             const grade = document.getElementById('sendGrade').value;
             const sections = [...new Set(students.filter(s => !grade || s.grade === grade).map(s => s.section).filter(s => s))];
@@ -1301,7 +1309,6 @@
             });
             updateFilteredStudentList();
         }
-
         function updateFilteredStudentList() {
             const grade = document.getElementById('sendGrade').value;
             const section = document.getElementById('sendSection').value;
@@ -1318,7 +1325,6 @@
                 studentSelect.appendChild(option);
             });
         }
-
         function displayStudentDetails() {
             const studentName = document.getElementById('filteredStudents').value;
             if (!studentName) {
@@ -1346,7 +1352,6 @@
             document.getElementById('studentDetailsTable').style.display = 'table';
             document.getElementById('whatsappButton').style.display = 'block';
         }
-
         function sendToWhatsApp() {
             const studentName = document.getElementById('filteredStudents').value;
             const studentRecords = savedStudents.filter(s => s.name === studentName);
@@ -1365,326 +1370,148 @@
             const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
             window.open(whatsappUrl, '_blank');
         }
-
         async function handleMediaUpload(event, grade) {
             const files = event.target.files;
             if (!grade) {
                 alert('يرجى اختيار الصف');
                 return;
             }
-            if (files.length === 0) {
-                alert('يرجى اختيار ملفات للرفع');
-                return;
-            }
-
+            if (!files.length) return;
             const newGroup = [];
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                let type;
-                if (file.type.startsWith('image/')) {
-                    type = 'image';
-                } else if (file.type.startsWith('video/')) {
-                    type = 'video';
-                } else if (file.type === 'application/pdf') {
-                    type = 'pdf';
-                } else {
-                    alert(`نوع الملف غير مدعوم: ${file.name}`);
-                    continue;
-                }
+            for (const file of files) {
+                const url = URL.createObjectURL(file);
                 newGroup.push({
                     blob: file,
-                    type: type,
-                    description: '',
-                    timestamp: new Date().toISOString()
+                    url: url,
+                    type: file.type,
+                    name: file.name,
+                    description: ''
                 });
             }
-            if (newGroup.length > 0) {
-                mediaGroups[grade].push(newGroup);
-                await saveMediaData();
-                renderMediaItems();
-                saveToHistory();
-            }
-            event.target.value = '';
+            mediaGroups[grade].push(newGroup);
+            renderMediaItems();
+            debouncedAutoSave();
         }
-
-        async function addMediaFromLink() {
+        function addMediaFromLink() {
             const link = document.getElementById('mediaLink').value.trim();
             const grade = document.getElementById('mediaGradeSelect').value;
-            if (!link) {
-                alert('يرجى إدخال رابط');
+            if (!link || !grade) {
+                alert('يرجى إدخال الرابط واختيار الصف');
                 return;
             }
-            if (!grade) {
-                alert('يرجى اختيار الصف');
-                return;
-            }
-
-            let type;
-            if (link.toLowerCase().endsWith('.pdf')) {
-                type = 'pdf';
-            } else if (link.includes('youtube.com') || link.includes('youtu.be')) {
-                type = 'youtube';
-            } else if (link.match(/\.(jpeg|jpg|png|gif|bmp|webp)$/i)) {
-                type = 'image';
-            } else if (link.match(/\.(mp4|webm|ogg)$/i)) {
-                type = 'video';
-            } else {
-                alert('نوع الرابط غير مدعوم');
-                return;
-            }
-
+            const type = link.includes('.pdf') ? 'application/pdf' : link.match(/\.(jpeg|jpg|png|gif)$/i) ? 'image' : link.match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'other';
             const newGroup = [{
-                src: link,
+                url: link,
                 type: type,
+                name: link.split('/').pop(),
                 description: '',
-                timestamp: new Date().toISOString()
+                blob: null
             }];
             mediaGroups[grade].push(newGroup);
-            await saveMediaData();
             renderMediaItems();
-            saveToHistory();
             document.getElementById('mediaLink').value = '';
-            document.getElementById('mediaGradeSelect').value = '';
+            debouncedAutoSave();
         }
-
         function renderMediaItems() {
             const container = document.getElementById('mediaContainer');
             container.innerHTML = '';
-
             for (const grade in mediaGroups) {
                 if (mediaGroups[grade].length === 0) continue;
-
-                const gradeSection = document.createElement('div');
-                gradeSection.className = 'media-group';
-                gradeSection.innerHTML = `<div class="media-group-header">${grade}</div>`;
-                const mediaContainer = document.createElement('div');
-                mediaContainer.className = 'media-container';
-
+                const gradeDiv = document.createElement('div');
+                gradeDiv.className = 'media-group';
+                gradeDiv.innerHTML = `<div class="media-group-header">${grade}</div>`;
                 mediaGroups[grade].forEach((group, groupIndex) => {
-                    if (group.length === 0) return;
-
-                    const column = document.createElement('div');
-                    column.className = 'media-column';
-
                     const slideContainer = document.createElement('div');
                     slideContainer.className = 'media-slide-container';
-                    slideContainer.setAttribute('data-group-index', groupIndex);
-                    slideContainer.setAttribute('data-grade', grade);
-
-                    group.forEach((item, index) => {
+                    group.forEach((item, itemIndex) => {
                         const slide = document.createElement('div');
-                        slide.className = `media-slide ${index === 0 ? 'active' : ''}`;
-                        let element = '';
-                        if (item.type === 'image') {
-                            const src = item.blob ? URL.createObjectURL(item.blob) : item.src;
-                            element = `<img src="${src}" onclick="openFullscreen('${grade}', ${groupIndex}, ${index})">`;
-                        } else if (item.type === 'video') {
-                            const src = item.blob ? URL.createObjectURL(item.blob) : item.src;
-                            element = `<video src="${src}" controls></video>`;
-                        } else if (item.type === 'youtube') {
-                            const videoId = item.src.includes('youtu.be') ? item.src.split('/').pop() : new URLSearchParams(new URL(item.src).search).get('v');
-                            element = `<iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
-                        } else if (item.type === 'pdf') {
-                            const src = item.blob ? URL.createObjectURL(item.blob) : item.src;
-                            element = `
-                                <embed src="${src}" type="application/pdf">
-                                <button class="open-btn" onclick="openPDFInNewTab('${src}')">فتح في صفحة جديدة</button>
-                            `;
+                        slide.className = `media-slide ${itemIndex === 0 ? 'active' : ''}`;
+                        let mediaElement = '';
+                        if (item.type.startsWith('image')) {
+                            mediaElement = `<img src="${item.url}" alt="${item.name}" onclick="openFullscreen('${item.url}')">`;
+                        } else if (item.type.startsWith('video')) {
+                            mediaElement = `<video controls><source src="${item.url}" type="${item.type}"></video>`;
+                        } else if (item.type === 'application/pdf') {
+                            mediaElement = `<embed src="${item.url}" type="application/pdf"><a href="${item.url}" target="_blank">${item.name}</a>`;
+                        } else if (item.type.startsWith('audio')) {
+                            mediaElement = `<audio controls><source src="${item.url}" type="${item.type}"></audio>`;
+                        } else {
+                            mediaElement = `<a href="${item.url}" target="_blank">${item.name}</a>`;
                         }
                         slide.innerHTML = `
-                            ${element}
-                            <textarea placeholder="أدخل وصفًا" onchange="updateMediaDescription('${grade}', ${groupIndex}, ${index}, this.value)">${item.description}</textarea>
+                            ${mediaElement}
+                            <textarea placeholder="أضف وصفًا" onchange="updateMediaDescription('${grade}', ${groupIndex}, ${itemIndex}, this.value)">${item.description}</textarea>
                         `;
                         slideContainer.appendChild(slide);
                     });
-
-                    if (group.length > 1) {
-                        const controls = document.createElement('div');
-                        controls.className = 'media-slide-controls';
-                        controls.innerHTML = `
-                            <button class="nav-btn" onclick="changeSlide('${grade}', ${groupIndex}, -1)">❮</button>
-                            <button class="delete-btn" onclick="deleteMediaItem('${grade}', ${groupIndex}, 0)">حذف</button>
-                            <button class="nav-btn" onclick="changeSlide('${grade}', ${groupIndex}, 1)">❯</button>
-                        `;
-                        slideContainer.appendChild(controls);
-                    } else {
-                        const controls = document.createElement('div');
-                        controls.className = 'media-slide-controls';
-                        controls.innerHTML = `
-                            <button class="delete-btn" onclick="deleteMediaItem('${grade}', ${groupIndex}, 0)">حذف</button>
-                        `;
-                        slideContainer.appendChild(controls);
-                    }
-
-                    column.appendChild(slideContainer);
-                    mediaContainer.appendChild(column);
+                    const controls = document.createElement('div');
+                    controls.className = 'media-slide-controls';
+                    controls.innerHTML = `
+                        <button class="nav-btn" onclick="navigateSlide('${grade}', ${groupIndex}, -1)">❮</button>
+                        <button class="delete-btn" onclick="deleteMediaGroup('${grade}', ${groupIndex})">حذف</button>
+                        <button class="nav-btn" onclick="navigateSlide('${grade}', ${groupIndex}, 1)">❯</button>
+                    `;
+                    slideContainer.appendChild(controls);
+                    gradeDiv.appendChild(slideContainer);
                 });
-
-                gradeSection.appendChild(mediaContainer);
-                container.appendChild(gradeSection);
+                container.appendChild(gradeDiv);
             }
         }
-
-        function changeSlide(grade, groupIndex, direction) {
-            const slideContainer = document.querySelector(`.media-slide-container[data-grade="${grade}"][data-group-index="${groupIndex}"]`);
-            const slides = slideContainer.querySelectorAll('.media-slide');
+        function navigateSlide(grade, groupIndex, direction) {
+            const slides = document.querySelectorAll(`.media-group:nth-child(${Object.keys(mediaGroups).indexOf(grade) + 1}) .media-slide-container:nth-child(${groupIndex + 2}) .media-slide`);
             let currentIndex = Array.from(slides).findIndex(slide => slide.classList.contains('active'));
             slides[currentIndex].classList.remove('active');
             currentIndex = (currentIndex + direction + slides.length) % slides.length;
             slides[currentIndex].classList.add('active');
-
-            const deleteBtn = slideContainer.querySelector('.media-slide-controls .delete-btn');
-            deleteBtn.setAttribute('onclick', `deleteMediaItem('${grade}', ${groupIndex}, ${currentIndex})`);
         }
-
-        async function updateMediaDescription(grade, groupIndex, index, description) {
-            mediaGroups[grade][groupIndex][index].description = description;
-            await saveMediaData();
-            saveToHistory();
+        function deleteMediaGroup(grade, groupIndex) {
+            mediaGroups[grade].splice(groupIndex, 1);
+            renderMediaItems();
+            debouncedAutoSave();
         }
-
-        async function deleteMediaItem(grade, groupIndex, index) {
-            if (confirm('هل أنت متأكد من حذف هذا العنصر؟')) {
-                mediaGroups[grade][groupIndex].splice(index, 1);
-                if (mediaGroups[grade][groupIndex].length === 0) {
-                    mediaGroups[grade].splice(groupIndex, 1);
-                }
-                await saveMediaData();
-                renderMediaItems();
-                saveToHistory();
+        function updateMediaDescription(grade, groupIndex, itemIndex, description) {
+            mediaGroups[grade][groupIndex][itemIndex].description = description;
+            debouncedAutoSave();
+        }
+        function openFullscreen(url) {
+            imageSources = [];
+            currentImageIndex = -1;
+            for (const grade in mediaGroups) {
+                mediaGroups[grade].forEach(group => {
+                    group.forEach(item => {
+                        if (item.type.startsWith('image')) {
+                            imageSources.push(item.url);
+                            if (item.url === url) {
+                                currentImageIndex = imageSources.length - 1;
+                            }
+                        }
+                    });
+                });
+            }
+            if (currentImageIndex >= 0) {
+                const overlay = document.getElementById('fullscreenOverlay');
+                const fullscreenImage = document.getElementById('fullscreenImage');
+                fullscreenImage.src = url;
+                overlay.style.display = 'flex';
             }
         }
-
-        function openFullscreen(grade, groupIndex, index) {
-            currentGrade = grade;
-            currentGroupIndex = groupIndex;
-            currentImageIndex = index;
-            imageSources = mediaGroups[grade][groupIndex]
-                .filter(item => item.type === 'image')
-                .map(item => item.blob ? URL.createObjectURL(item.blob) : item.src);
-            if (imageSources.length === 0) return;
-            const overlay = document.getElementById('fullscreenOverlay');
-            const img = document.getElementById('fullscreenImage');
-            img.src = imageSources[currentImageIndex];
-            overlay.style.display = 'flex';
-            updateNavigationButtons();
-        }
-
         function closeFullscreen() {
             const overlay = document.getElementById('fullscreenOverlay');
             overlay.style.display = 'none';
             currentImageIndex = -1;
-            currentGroupIndex = -1;
-            currentGrade = '';
             imageSources = [];
         }
-
         function navigateImages(direction) {
+            if (imageSources.length === 0) return;
             currentImageIndex = (currentImageIndex + direction + imageSources.length) % imageSources.length;
-            const img = document.getElementById('fullscreenImage');
-            img.src = imageSources[currentImageIndex];
-            updateNavigationButtons();
+            document.getElementById('fullscreenImage').src = imageSources[currentImageIndex];
         }
-
-        function updateNavigationButtons() {
-            const prevBtn = document.querySelector('.prev-btn');
-            const nextBtn = document.querySelector('.next-btn');
-            if (imageSources.length <= 1) {
-                prevBtn.style.display = 'none';
-                nextBtn.style.display = 'none';
-            } else {
-                prevBtn.style.display = 'block';
-                nextBtn.style.display = 'block';
-            }
-        }
-
-        function openPDFInNewTab(src) {
-            try {
-                window.open(src, '_blank');
-            } catch (error) {
-                console.error('خطأ في فتح ملف PDF:', error);
-                alert('حدث خطأ أثناء فتح ملف PDF. يرجى التأكد من أن الرابط صحيح أو أن الملف متاح.');
-            }
-        }
-
-        function saveKashfData() {
-            localStorage.setItem('students', JSON.stringify(students));
-        }
-
-        function loadKashfData() {
-            const data = localStorage.getItem('students');
-            if (data) {
-                students = JSON.parse(data);
-                students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
-            }
-        }
-
-        function saveSavedData() {
-            localStorage.setItem('savedStudents', JSON.stringify(savedStudents));
-        }
-
-        function loadSavedData() {
-            const data = localStorage.getItem('savedStudents');
-            if (data) {
-                const parsedData = JSON.parse(data);
-                savedStudents = parsedData.map(student => {
-                    if (!student.behaviors) {
-                        return {
-                            name: student.name,
-                            grade: student.grade,
-                            section: student.section,
-                            behaviors: [{
-                                behavior: student.behavior,
-                                score: student.score,
-                                date: student.date,
-                                day: student.day
-                            }],
-                            notes: student.notes || ''
-                        };
-                    }
-                    return student;
-                });
-            }
-        }
-
-        async function saveMediaData() {
-            const transaction = db.transaction(['mediaGroups'], 'readwrite');
-            const store = transaction.objectStore('mediaGroups');
-            await store.clear();
-            let id = 1;
-            for (const grade in mediaGroups) {
-                mediaGroups[grade].forEach(group => {
-                    store.add({ id: id++, grade: grade, data: group });
-                });
-            }
-        }
-
-        async function loadMediaData() {
-            const transaction = db.transaction(['mediaGroups'], 'readonly');
-            const store = transaction.objectStore('mediaGroups');
-            const request = store.getAll();
-            return new Promise((resolve) => {
-                request.onsuccess = function() {
-                    mediaGroups = { 'الأول متوسط': [], 'الثاني متوسط': [], 'الثالث متوسط': [] };
-                    request.result.forEach(item => {
-                        if (mediaGroups[item.grade]) {
-                            mediaGroups[item.grade].push(item.data);
-                        }
-                    });
-                    resolve();
-                };
-            });
-        }
-
         function saveToHistory() {
             historyStack.push({
                 students: JSON.parse(JSON.stringify(students)),
                 savedStudents: JSON.parse(JSON.stringify(savedStudents)),
                 mediaGroups: JSON.parse(JSON.stringify(mediaGroups))
             });
-            if (historyStack.length > 50) {
-                historyStack.shift();
-            }
         }
     </script>
 </body>
