@@ -972,7 +972,7 @@
             } else if (behavior && behavior !== '') {
                 students[index].score = Math.max(0, students[index].score - 2);
             }
-            renderKashfTable();
+            filterKashfTable();
             debouncedAutoSave();
             saveToHistory();
         }
